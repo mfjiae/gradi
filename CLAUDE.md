@@ -71,6 +71,9 @@ This file is the source of truth for rules, milestones, the bug list and future 
 - "Edit details" button on the subject page opens the Add subject form prefilled, plus Official result (grade + optional mark). The prototype had no way to edit a subject or record its result.
 - Backup card: Download backup / Restore from file (Merge or Replace) / Load sample subjects (only when empty) / Clear everything, replacing the prototype's JSON text box.
 
+## Next update (noted, not built; needs a UI prototype and "UI locked" first)
+- Settings, Current session: replace the free-typed year box with a year dropdown plus left/right arrows to step the year quickly. Years start at 2025 and the top year is the current calendar year, so 2027 appears by itself in 2027 (computed from the date, nothing to update by hand). Open points: also list any year a saved subject uses if it is outside the range; same picker for the Year field in Add/Edit subject.
+
 ## Visual bug list (cosmetic, ships in a batch)
 - Phone: long part names (e.g. "Quiz 2") get cut off in the marks editor because the score boxes take the width.
 - Phone: ladder scale labels "C 65 D 75 HD 85" crowd together.
