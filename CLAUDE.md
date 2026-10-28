@@ -76,7 +76,8 @@ This file is the source of truth for rules, milestones, the bug list and future 
 - Backup card: Download backup / Restore from file (Merge or Replace) / Load sample subjects (only when empty) / Clear everything, replacing the prototype's JSON text box.
 
 ## Visual bug list (cosmetic, ships in a batch)
-- (empty) The four phone items shipped in M4.0 on 28 Oct 2026.
+- Empty Home (phone and desktop): remove the "Add subject" button under the stat cards. Ken: the sidebar (desktop) and Add tab (phone) already have one. Added in M4.0, Ken asked to remove it right after.
+- (The four phone items shipped in M4.0 on 28 Oct 2026.)
 
 ## Future ideas
 - Deadlines per assessment; GPA trend chart across sessions.
