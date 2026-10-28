@@ -77,6 +77,7 @@ This file is the source of truth for rules, milestones, the bug list and future 
 
 ## Visual bug list (cosmetic, ships in a batch)
 - Empty Home (phone and desktop): remove the "Add subject" button under the stat cards. Ken: the sidebar (desktop) and Add tab (phone) already have one. Added in M4.0, Ken asked to remove it right after.
+- Settings layout, UI LOCKED A + B (28 Oct 2026, prototype "gradi Settings Layout Prototype"): desktop = two columns, left Current session + Backup, right Sync + Grade bands, Import from text full width below (no stretched empty space in Backup, Sync or Current session). Phone stays one column. Backup card also shows "On this device: N subjects" and "Last backup: <when>" (last backup date = device-only `meta` row set when Download backup is pressed; never in backups or the synced file; "never" until then). Ships with the Add subject removal above. Waiting for Ken's "build" (Sonnet medium).
 - (The four phone items shipped in M4.0 on 28 Oct 2026.)
 
 ## Future ideas
