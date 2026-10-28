@@ -133,7 +133,7 @@ export default function Study({ tasks, subjects, current, onOpen, onNew }) {
         <div className="chips">
           <button type="button" className={`chip ${view !== 'calendar' ? 'on' : ''}`} aria-pressed={view !== 'calendar'} onClick={() => setView('tasks')}>Tasks</button>
           <button type="button" className={`chip ${view === 'calendar' ? 'on' : ''}`} aria-pressed={view === 'calendar'} onClick={() => setView('calendar')}>Calendar</button>
-          <button type="button" className="btn sm ghost" disabled={!subjects.length} onClick={() => setImporting(true)}>Import</button>
+          <button type="button" className="btn sm primary study-first" disabled={!subjects.length} onClick={() => setImporting(true)}>Import</button>
           <button type="button" className="btn sm primary" disabled={!subjects.length} onClick={() => onNew()}><Icon name="plus" />New</button>
         </div>
       </div>

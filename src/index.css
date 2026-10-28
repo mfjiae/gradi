@@ -335,6 +335,7 @@ textarea.in.wrap { resize: none; overflow: hidden; min-height: 38px; padding: 8p
 /* task pop-up and due-date prompt */
 .task-modal { max-width: 560px; max-height: calc(100vh - 32px); overflow-y: auto; }
 .task-modal .card-head { flex-wrap: nowrap; }
+.chips .study-first { margin-left: 14px; }
 .ti-text { font: 12.5px/1.5 ui-monospace, Menlo, monospace; resize: vertical; }
 .ti-sum { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--other); }
 .ti-list { display: flex; flex-direction: column; gap: 6px; }
