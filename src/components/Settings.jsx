@@ -43,6 +43,7 @@ function ago(ms) {
   if (sec < 60) return 'just now';
   if (sec < 3600) return `${Math.round(sec / 60)} min ago`;
   if (sec < 86400) return `${Math.round(sec / 3600)} h ago`;
+  if (sec < 7 * 86400) { const d = Math.floor(sec / 86400); return d === 1 ? 'yesterday' : `${d} days ago`; }
   return new Date(ms).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
 }
 
@@ -129,6 +130,7 @@ function SyncCard() {
 
 function DataCard({ count }) {
   const syncOn = !!useLiveQuery(() => db.meta.get('sync'), [])?.token;
+  const lastBackup = useLiveQuery(() => db.meta.get('lastBackup'), [])?.at;
   const arm = useArm();
   const file = useRef(null);
   const [msg, setMsg] = useState(null);
@@ -144,6 +146,7 @@ function DataCard({ count }) {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    await db.meta.put({ key: 'lastBackup', at: Date.now() }); // this device only: never synced or backed up
     setMsg({ ok: true, text: `Saved ${a.download} (${snap.subjects.length} subject${snap.subjects.length === 1 ? '' : 's'}).` });
   };
   const pick = async (e) => {
@@ -169,6 +172,10 @@ function DataCard({ count }) {
     <div className="card">
       <h3 className="card-title">Backup</h3>
       <div className="note">A backup is one file of all your grades. Keep one now and then, even with sync on.</div>
+      <div className="info-box">
+        <div><span>On this device</span><b>{count} subject{count === 1 ? '' : 's'}</b></div>
+        <div><span>Last backup</span><b>{lastBackup ? ago(lastBackup) : 'never'}</b></div>
+      </div>
       <div className="add-row">
         <button type="button" className="btn sm" onClick={download}>Download backup</button>
         <button type="button" className="btn sm" onClick={() => file.current?.click()}>Restore from file</button>
@@ -213,16 +220,22 @@ function BandsCard() {
 }
 
 export default function Settings({ current, count, years }) {
+  // Desktop: two columns so each card is only as tall as its content (left: session + backup, right: sync +
+  // bands), Import full width below. Phone: one column in the order session, sync, backup, bands, import.
   return (
     <>
       <div className="head"><h1 className="h1">Settings</h1></div>
-      <div className="grid g2">
-        <SessionCard current={current} years={years} />
-        <SyncCard />
-        <DataCard count={count} />
-        <BandsCard />
-        <div className="span-all"><ImportCard /></div>
+      <div className="set-cols">
+        <div className="set-col">
+          <div className="o1"><SessionCard current={current} years={years} /></div>
+          <div className="o3"><DataCard count={count} /></div>
+        </div>
+        <div className="set-col">
+          <div className="o2"><SyncCard /></div>
+          <div className="o4"><BandsCard /></div>
+        </div>
       </div>
+      <ImportCard />
     </>
   );
 }

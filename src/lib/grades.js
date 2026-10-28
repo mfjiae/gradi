@@ -3,7 +3,7 @@
 //
 // A subject record:
 //   { uid, code, name, year, session ('Autumn'|'Spring'|'Summer'), cp, target,
-//     components: [{ id, name, weight, single, hurdle, items: [{ id, name, score, max, w }] }],
+//     components: [{ id, name, weight, single, hurdle, best (count the best N parts, or null), items: [{ id, name, score, max, w }] }],
 //     official: { grade: 'HD'|'D'|'C'|'P'|'F'|'PASS', mark: number|null } | null,
 //     countsGpa (default true), countsWam (default true), updatedAt }
 // Marks and weights stay plain numbers. Rounding happens only for display (fmt) and for required marks (ceil1).
@@ -43,6 +43,35 @@ export const ceil1 = (n) => Math.ceil(n * 10 - 1e-9) / 10;
 // Bands use the whole-number mark: 84.5 rounds to 85 = HD.
 export const band = (mark) => BANDS.find((b) => Math.round(mark) >= b.min) || FAIL;
 
+const isMarked = (i) => isNum(i.score) && isNum(i.max) && i.max > 0;
+const partPct = (i) => i.score / i.max;
+
+// "Count the best N of M parts" for a split component (c.best = N). Rule agreed with Ken (28 Oct 2026):
+//  - Marked parts are ranked by percent (ties: the earlier part wins). The best N marked parts count.
+//  - Nothing is dropped until more than N parts are marked; the lowest marked ones are then "Not counted".
+//  - While fewer than N are marked, the first unmarked parts fill the remaining slots (they are still to come);
+//    any other unmarked parts are "Optional": they only count once marked and better than a counted one.
+//  - No rule (best empty, or N >= number of parts, or a single mark): every part counts.
+//  - An official result still wins over all of this for the subject.
+// Returns keep (ids that count) and out (id -> 'dropped' | 'optional').
+export function keepBest(c) {
+  const all = c.single ? c.items.slice(0, 1) : c.items;
+  const N = num(c.best);
+  const keep = new Set(all.map((i) => i.id));
+  const out = new Map();
+  if (c.single || N == null || !Number.isInteger(N) || N < 1 || N >= all.length) return { keep, out };
+  const marked = all.map((i, k) => ({ i, k })).filter((x) => isMarked(x.i))
+    .sort((a, b) => partPct(b.i) - partPct(a.i) || a.k - b.k);
+  const kept = marked.slice(0, N);
+  const free = N - kept.length;
+  const pendingKept = all.filter((i) => !isMarked(i)).slice(0, free);
+  keep.clear();
+  for (const x of kept) keep.add(x.i.id);
+  for (const i of pendingKept) keep.add(i.id);
+  for (const i of all) if (!keep.has(i.id)) out.set(i.id, isMarked(i) ? 'dropped' : 'optional');
+  return { keep, out };
+}
+
 // One subject's numbers from its components.
 // assume(p) (optional) returns a what-if percent for each unmarked part p; the result then includes proj.
 export function calc(s, assume) {
@@ -55,7 +84,10 @@ export function calc(s, assume) {
   const comps = [];
   for (const c of components) {
     const cw = num(c.weight) || 0;
-    const items = c.single ? c.items.slice(0, 1) : c.items;
+    const all = c.single ? c.items.slice(0, 1) : c.items;
+    // "Count the best N" (Ken, 28 Oct 2026): see keepBest. Parts left out still show, they just don't count.
+    const { keep, out } = keepBest(c);
+    const items = all.filter((i) => keep.has(i.id));
     // Parts are weighted by points (total scored / total available), the way Canvas does it.
     // A part's own w (custom weight) is a later extra; null means "use its points".
     const wOf = (i) => (c.single ? 1 : (num(i.w) ?? (isNum(i.max) && i.max > 0 ? i.max : 1)));
@@ -64,7 +96,7 @@ export function calc(s, assume) {
     let cg = 0; // fraction of this component marked
     for (const i of items) {
       const share = wOf(i) / sw;
-      if (isNum(i.score) && isNum(i.max) && i.max > 0) {
+      if (isMarked(i)) {
         cg += share;
         ce += (share * i.score) / i.max;
       } else {
@@ -76,7 +108,7 @@ export function calc(s, assume) {
     if (isNum(c.hurdle) && pct != null) hs = pct >= c.hurdle ? 'ok' : cg >= 0.999 ? 'fail' : 'risk';
     earned += ce * cw;
     gradedW += cg * cw;
-    comps.push({ c, pct, cg, pts: ce * cw * scale, maxPts: cw * scale, hs });
+    comps.push({ c, pct, cg, pts: ce * cw * scale, maxPts: cw * scale, hs, out });
   }
   const banked = earned * scale; // points banked out of 100
   const gradedPts = gradedW * scale; // points marked so far out of 100

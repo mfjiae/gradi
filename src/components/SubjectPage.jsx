@@ -33,7 +33,7 @@ function CompEditor({ s, r, save, arm }) {
         <div className="warnbox">Weights add up to {fmt(r.W)}%, not 100%. Marks are scaled to 100 for now.</div>
       )}
       {r.comps.length === 0 && <div className="empty">No components yet. Add the first one below.</div>}
-      {r.comps.map(({ c, pct, pts, maxPts, hs }) => (
+      {r.comps.map(({ c, pct, pts, maxPts, hs, out }) => (
         <div className="comp" key={c.id}>
           <div className="comp-head">
             <Field value={c.name} aria-label="Component name" onCommit={(v) => save((x) => E.setCompField(x, c.id, 'name', v))} />
@@ -56,11 +56,23 @@ function CompEditor({ s, r, save, arm }) {
             </div>
           ) : (
             <>
+              {c.items.length > 1 && (
+                <div className="best-row">
+                  <span>Count the best</span>
+                  <Field className="numw" numeric value={c.best} placeholder="all" aria-label={`${label(c)}: how many parts count`} onCommit={(v) => save((x) => E.setCompField(x, c.id, 'best', v))} />
+                  <span>of {c.items.length} parts</span>
+                </div>
+              )}
               {c.items.map((i) => {
                 const g = isNum(i.score) && isNum(i.max) && i.max > 0;
+                const st = out?.get(i.id);
                 return (
-                  <div className="irow part" key={i.id}>
-                    <Field wrap value={i.name} aria-label="Part name" onCommit={(v) => save((x) => E.setPartField(x, c.id, i.id, 'name', v))} />
+                  <div className={`irow part ${st === 'dropped' ? 'off' : ''}`} key={i.id}>
+                    <span className="pname">
+                      <Field wrap value={i.name} aria-label="Part name" onCommit={(v) => save((x) => E.setPartField(x, c.id, i.id, 'name', v))} />
+                      {st === 'dropped' && <span className="ntag">Not counted</span>}
+                      {st === 'optional' && <span className="ntag opt">Optional</span>}
+                    </span>
                     <span className="inl">
                       <Field className="num" numeric value={i.score} placeholder="—" aria-label={`${i.name} score`} onCommit={(v) => save((x) => E.setPartField(x, c.id, i.id, 'score', v))} />
                       {' / '}
@@ -73,7 +85,7 @@ function CompEditor({ s, r, save, arm }) {
               })}
               <div className="opts">
                 <button type="button" className="link" onClick={() => save((x) => E.addPart(x, c.id))}>+ Add part</button>
-                <span className="note">Parts are weighted by points.</span>
+                <span className="note">{out?.size ? 'Parts are weighted by points. Your lowest marks are left out automatically.' : 'Parts are weighted by points.'}</span>
               </div>
             </>
           )}

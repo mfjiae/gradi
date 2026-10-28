@@ -6,6 +6,7 @@
 //   Task 1 | 25% | 5/5, 20/20
 //   Quizzes | 30% | Quiz 1=8/10, Quiz 2=-/10
 //   Final exam | 40% | -/100 | hurdle 50
+//   Quizzes | 40% | best 4 | 7.5/10, 9/10, 4.5/10, 5/10, 10/10   (count the best 4)
 // First line: code (name optional after ":") and session + year are required; the rest is optional, any order.
 // Assessment line: name | weight | marks | hurdle. One unnamed mark = a single mark; several marks (or a named one)
 // = parts. "-" as the score = not marked yet. Unnamed parts become Part 1, Part 2.
@@ -24,6 +25,7 @@ const RE = {
   noWam: /^no\s+wam$/i,
   weight: new RegExp(`^${NUM}\\s*%?$`),
   hurdle: new RegExp(`^hurdle\\s*${NUM}\\s*%?$`, 'i'),
+  best: /^best\s+(\d+)(?:\s+of\s+\d+)?$/i,
   mark: new RegExp(`^(-|${NUM})?\\s*/\\s*${NUM}$`),
 };
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
@@ -89,18 +91,27 @@ function parseMarks(text, n, code, problems) {
 }
 
 function parseComponent(line, n, code, problems) {
-  const [name, weightText = '', marksText = '', ...extra] = cells(line);
+  const [name, weightText = '', ...rest] = cells(line);
   const err = (text) => { problems.push({ line: n, level: 'error', code, text }); return null; };
   if (!name) return err('An assessment line needs a name before the first "|".');
   const w = weightText.match(RE.weight);
   if (!w) return err(`Can't read the weight “${weightText}” for ${name}. Write it like 25%.`);
   let hurdle = null;
-  for (const c of extra) {
+  let best = null;
+  let marksText = null;
+  for (const c of rest) {
     if (!c) continue;
-    const m = c.match(RE.hurdle);
-    if (!m) return err(`Can't read “${c}” for ${name}. Only "hurdle 50" can go after the marks.`);
-    hurdle = Number(m[1]);
-    if (hurdle > 100) return err(`Hurdle ${hurdle} for ${name} is more than 100%.`);
+    let m;
+    if ((m = c.match(RE.hurdle))) {
+      hurdle = Number(m[1]);
+      if (hurdle > 100) return err(`Hurdle ${hurdle} for ${name} is more than 100%.`);
+    } else if ((m = c.match(RE.best))) {
+      best = Number(m[1]);
+    } else if (marksText == null) {
+      marksText = c;
+    } else {
+      return err(`Can't read “${c}” for ${name}. After the marks only "hurdle 50" or "best 4" can go.`);
+    }
   }
   let marks = { single: true, items: [{ id: pid(), name: 'Mark', score: null, max: 100, w: null }] };
   if (marksText) {
@@ -108,7 +119,10 @@ function parseComponent(line, n, code, problems) {
     if (parsed === undefined) return null;
     if (parsed) marks = parsed;
   }
-  return { id: pid(), name, weight: Number(w[1]), hurdle, ...marks };
+  if (best != null && (marks.single || best < 1 || best >= marks.items.length)) {
+    return err(`“best ${best}” for ${name} needs more than ${best} marks (it has ${marks.single ? 1 : marks.items.length}).`);
+  }
+  return { id: pid(), name, weight: Number(w[1]), hurdle, best, ...marks };
 }
 
 // Text -> { blocks, problems }. A block = one subject's parsed fields; a block with any error is left out
@@ -162,7 +176,7 @@ export function markLabels(c) {
   const items = c.single ? c.items.slice(0, 1) : c.items;
   return items.map((i) => `${c.single ? '' : `${i.name} `}${i.score == null ? '-' : i.score}/${i.max}`);
 }
-const compSig = (c) => JSON.stringify([c.weight, c.hurdle ?? null, markLabels(c)]);
+const compSig = (c) => JSON.stringify([c.weight, c.hurdle ?? null, c.best ?? null, markLabels(c)]);
 
 // Parsed blocks + subjects already saved -> what Import will do. Never deletes anything.
 //  new: a fresh subject. update: same code + year + session as a saved one; its assessments are replaced by the

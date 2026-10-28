@@ -60,6 +60,7 @@ export function setCompField(s, cid, field, value) {
     if (field === 'name') c.name = String(value);
     else if (field === 'weight') c.weight = num(value) ?? 0;
     else if (field === 'hurdle') { const h = num(value); c.hurdle = h == null ? null : clamp(h, 0, 100); }
+    else if (field === 'best') { const b = num(value); c.best = b == null || b < 1 ? null : Math.round(b); }
   });
 }
 

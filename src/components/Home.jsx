@@ -54,7 +54,7 @@ function PastSessions({ subjects, current, open }) {
   );
 }
 
-export default function Home({ subjects, current, open, go, add }) {
+export default function Home({ subjects, current, open, go }) {
   const subs = subjects.filter((s) => isCurrent(s, current));
   const cur = overall(subs);
   const done = overall(subjects, { onlyOfficial: true });
@@ -79,7 +79,6 @@ export default function Home({ subjects, current, open, go, add }) {
         <Stat label="WAM · all sessions" color="--c" tint="tint-b" value={fmt(done.avg)} reason={empty ? 'Needs a mark' : null}>this session <b>{cur.avg == null ? '—' : `${fmt(cur.avg)}%`}</b></Stat>
         <Stat label="GPA if every target is hit" color="--warn" tint="tint-o" value={fmt(all.gpaTarget, 2)} reason={empty ? 'Needs a subject' : null}>this session <b>{fmt(cur.gpaTarget, 2)}</b></Stat>
       </div>
-      {empty && <div><button type="button" className="btn primary" onClick={add}>Add subject</button></div>}
       <div className="cols">
         <div className="stack">
           <div className="card">

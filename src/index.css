@@ -228,6 +228,7 @@ textarea.in { padding: 10px; min-height: 140px; resize: vertical; font-family: u
 .imp-mk.old { color: var(--other); background: none; text-decoration: line-through; }
 .imp-hur, .imp-chg { display: inline-block; margin-left: 6px; font-size: 11px; font-style: normal; border-radius: 999px; padding: 0 6px; }
 .imp-hur { color: var(--warn); border: 1px solid #5a3326; }
+.imp-best { color: var(--c); border: 1px solid #234a63; display: inline-block; margin-left: 6px; font-size: 11px; font-style: normal; border-radius: 999px; padding: 0 6px; }
 .imp-chg { color: var(--accent); }
 
 /* phone fixes (28 Oct 2026) */
@@ -248,3 +249,25 @@ textarea.in.wrap { resize: none; overflow: hidden; min-height: 38px; padding: 8p
   .tab-i.add span.circle svg.ic { width: 26px; height: 26px; stroke-width: 2.6; }
 }
 .home-empty { gap: 4px; }
+
+/* count the best N of M parts */
+.best-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--other); }
+.pname { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.pname > .in { width: 100%; }
+.ntag { font-size: 11.5px; color: #ffb59f; border: 1px solid #5a3326; background: #2c1c17; border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+.ntag.opt { color: var(--other); border-color: var(--border); background: none; }
+.irow.part.off .pname > .in, .irow.part.off .inl .in { opacity: 0.5; }
+.irow.part.off .pc { opacity: 0.5; text-decoration: line-through; }
+
+/* Settings layout (A + B) */
+.set-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.set-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.set-col > div { display: flex; flex-direction: column; min-width: 0; }
+.info-box { display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); padding: 10px 12px; }
+.info-box div { display: flex; justify-content: space-between; gap: 10px; font-size: 13.5px; }
+.info-box span { color: var(--other); }
+@media (max-width: 899px) {
+  .set-cols { display: flex; flex-direction: column; }
+  .set-col { display: contents; }
+  .o1 { order: 1; } .o2 { order: 2; } .o3 { order: 3; } .o4 { order: 4; }
+}

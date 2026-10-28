@@ -2,8 +2,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   band, calc, needed, result, bandOf, overall, ceil1, fmt, num, groupSessions, guessSession, isCurrent,
-  pendingAcross, defaultWhatIf, subBand, yearOptions, calendarYear,
+  pendingAcross, defaultWhatIf, subBand, yearOptions, calendarYear, keepBest,
 } from '../grades.js';
+import * as E from '../edit.js';
 
 let n = 0;
 const id = () => `t${++n}`;
@@ -225,5 +226,65 @@ describe('year options', () => {
   });
   it('still list years outside the range that subjects use, without duplicates', () => {
     expect(yearOptions([2024, 2026, 2030, 2026, 'x', 12.5], new Date('2026-10-28T03:00:00Z'))).toEqual([2024, 2025, 2026, 2030]);
+  });
+});
+
+describe('count the best N of M parts', () => {
+  const quiz = (scores, best, max = 10) => ({
+    id: 'q', name: 'Quizzes', weight: 40, single: false, hurdle: null, best,
+    items: scores.map((v, k) => ({ id: `p${k}`, name: `Quiz ${k + 1}`, score: v, max, w: null })),
+  });
+  const sub = (...components) => ({ code: 'FAKE', cp: 6, target: 85, components });
+
+  it('drops the lowest once more than N are marked, and still lists it', () => {
+    const c = quiz([7.5, 9, 4.5, 5, 10], 4);
+    const { keep, out } = keepBest(c);
+    expect([...out]).toEqual([['p2', 'dropped']]);
+    expect(keep.size).toBe(4);
+    const r = calc(sub(c));
+    expect(r.comps[0].pct).toBeCloseTo(78.75, 9); // 31.5 / 40
+    expect(r.W).toBe(40);
+    expect(r.comps[0].out.get('p2')).toBe('dropped');
+  });
+
+  it('drops nothing while N or fewer are marked; spare unmarked parts are optional', () => {
+    const c = quiz([2, 9, 8, null, null], 4);
+    const { out } = keepBest(c);
+    expect([...out]).toEqual([['p4', 'optional']]); // 3 marked + the first unmarked fill the 4 slots
+    const r = calc(sub(c));
+    expect(r.comps[0].pct).toBeCloseTo(63.33333, 4); // 19 / 30, the low 2 still counts
+    expect(r.pending.map((p) => p.iid)).toEqual(['p3']);
+    expect(r.pending[0].pts).toBeCloseTo(100 / 4, 9); // one of four counted slots
+    const four = keepBest(quiz([2, 9, 8, 7, null], 4));
+    expect([...four.out]).toEqual([['p4', 'optional']]);
+  });
+
+  it('ties keep the earlier part; no rule when best is empty, too big or a single mark', () => {
+    expect([...keepBest(quiz([5, 5, 5], 2)).out]).toEqual([['p2', 'dropped']]);
+    for (const b of [null, 5, 6, 0, 2.5]) expect(keepBest(quiz([1, 2, 3, 4, 5], b)).out.size).toBe(0);
+    expect(keepBest({ ...quiz([1, 2], 1), single: true }).out.size).toBe(0);
+  });
+
+  it('works out what is needed and what-ifs on the counted parts only', () => {
+    const c = quiz([10, 10, 0, null, null], 3); // 3 marked = N: nothing dropped, both unmarked parts optional
+    const r = calc(sub({ ...c, weight: 100 }));
+    expect(r.comps[0].out.size).toBe(2); // two unmarked parts are optional
+    expect(r.state).toBe('missed');
+    const c2 = quiz([10, 10, 0, 6, null], 3); // 4 marked > 3: the 0 is dropped
+    const r2 = calc(sub({ ...c2, weight: 100 }));
+    expect(r2.banked).toBeCloseTo((26 / 30) * 100, 9);
+    expect(r2.pending).toEqual([]);
+  });
+
+  it('an official result still wins', () => {
+    const s = { ...sub(quiz([1, 1, 1, 1, 1], 4)), official: { grade: 'HD', mark: 88 } };
+    expect(result(s)).toMatchObject({ grade: 'HD', mark: 88 });
+  });
+
+  it('setCompField sets and clears the best count', () => {
+    const s = sub(quiz([1, 2, 3], null));
+    expect(E.setCompField(s, 'q', 'best', '2').components[0].best).toBe(2);
+    expect(E.setCompField(s, 'q', 'best', '').components[0].best).toBeNull();
+    expect(E.setCompField(s, 'q', 'best', '0').components[0].best).toBeNull();
   });
 });

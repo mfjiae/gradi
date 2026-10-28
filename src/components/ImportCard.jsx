@@ -41,6 +41,7 @@ function Details({ p }) {
           <div className="imp-crow" key={c.id}>
             <span className="imp-cn">{c.name}
               {c.hurdle != null && <em className="imp-hur">hurdle {fmt(c.hurdle)}%</em>}
+              {c.best != null && <em className="imp-best">best {c.best} of {c.items.length}</em>}
               {p.status === 'update' && ch?.changed && <em className="imp-chg">{ch.isNew ? 'new' : 'changed'}</em>}
             </span>
             <span className="imp-cw">{fmt(c.weight)}%</span>
@@ -132,7 +133,7 @@ export default function ImportCard() {
           <li>First line of a subject: code, an optional <code>: name</code>, session and year, credit points (6 if left out), then the official result if there is one (<code>D 77</code>, <code>HD</code>, <code>PASS</code>).</li>
           <li>One line per assessment: name, weight, marks. One mark is a single mark. Several marks, separated by commas, are parts.</li>
           <li><code>5/5</code> is score/max. <code>-/100</code> is not marked or hidden. Name a part with <code>Quiz 1=8/10</code>, otherwise it is Part 1, Part 2.</li>
-          <li>Optional at the end of a line: <code>hurdle 50</code>. Optional on the first line: <code>target 85</code>, <code>no gpa</code>, <code>no wam</code>.</li>
+          <li>Optional after the weight or the marks: <code>hurdle 50</code>, and <code>best 4</code> to count only the best 4 parts (the rest still show, marked Not counted). Optional on the first line: <code>target 85</code>, <code>no gpa</code>, <code>no wam</code>.</li>
           <li>A blank line starts the next subject. An updated subject keeps its saved assessments if you paste only its first line.</li>
         </ul>
       </details>

@@ -76,7 +76,9 @@ Exam | 100 | Final=-/60`);
       ['FAKE | Winter 2026', /Can't read “Winter 2026”/],
       ['FAKE | Autumn 2026\nTask | lots | 5/5', /weight “lots”/],
       ['FAKE | Autumn 2026\nTask | 10% | 5/0', /out of 0/],
-      ['FAKE | Autumn 2026\nTask | 10% | 5/5 | bonus', /Only "hurdle 50"/],
+      ['FAKE | Autumn 2026\nTask | 10% | 5/5 | bonus', /only "hurdle 50" or "best 4"/],
+      ['FAKE | Autumn 2026\nQuizzes | 40% | best 4 | 1/10, 2/10, 3/10, 4/10', /needs more than 4 marks/],
+      ['FAKE | Autumn 2026\nExam | 40% | best 1 | 50/100', /needs more than 1 marks/],
       ['FAKE | Autumn 2026 | target 120', /between 0 and 100/],
       ['FAKE | Autumn 2026\n\nFAKE | Autumn 2026', /pasted twice/],
     ];
@@ -86,6 +88,24 @@ Exam | 100 | Final=-/60`);
     }
     expect(parseImport('FAKE | Autumn 2026\nTask | 10% | 12/10').problems[0]).toMatchObject({ level: 'warn' });
     expect(parseImport('').blocks).toEqual([]);
+  });
+});
+
+describe('best N of M in the text', () => {
+  it('reads "best 4" before or after the marks, and "best 4 of 5"', () => {
+    for (const line of ['Quizzes | 40% | best 4 | 7.5/10, 9/10, 4.5/10, 5/10, 10/10', 'Quizzes | 40% | 7.5/10, 9/10, 4.5/10, 5/10, 10/10 | best 4 of 5 | hurdle 40']) {
+      const { blocks, problems } = parseImport(`FAKE | Spring 2026\n${line}`);
+      expect(problems.filter((p) => p.level !== 'warn')).toEqual([]);
+      expect(blocks[0].components[0]).toMatchObject({ best: 4, single: false });
+      expect(blocks[0].components[0].items).toHaveLength(5);
+      expect(calc({ ...newSubject({ code: 'FAKE' }), components: blocks[0].components }).comps[0].pct).toBeCloseTo(78.75, 9);
+    }
+  });
+  it('a changed best count shows as a change on update', () => {
+    const s = { ...newSubject({ code: 'FAKE', year: 2026, session: 'Spring' }), components: parseImport('X | Spring 2026\nQ | 40% | 1/10, 2/10, 3/10').blocks[0].components };
+    const [u] = planImport(parseImport('FAKE | Spring 2026\nQ | 40% | best 2 | 1/10, 2/10, 3/10').blocks, [s]);
+    expect(u.status).toBe('update');
+    expect(u.changes[0].changed).toBe(true);
   });
 });
 
