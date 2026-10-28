@@ -10,6 +10,7 @@ This file is the source of truth for rules, milestones, the bug list and future 
 - "Fix now" without asking is for logic or code bugs only (wrong numbers, unreadable text, unclickable buttons). Cosmetic changes go on the visual bug list below and ship in a batch.
 - When Ken reports visual bugs, add them to the bug list unless he says fix now. "Note it, don't build yet" means exactly that.
 - Prototypes show both phone and desktop, unless the change is for one device only.
+- Batch small updates: when a small update (including bug-list items) is close in time or area to a bigger update, merge them into that one build instead of pushing separately. Say what was merged. UI changes still need their phone/desktop prototype and "UI locked" first.
 - Small milestones, tested before pushing; show what changed in a few lines. Point out UX problems proactively.
 - American spelling, metric units. Use subject abbreviations when talking to Ken, not codes.
 
