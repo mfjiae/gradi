@@ -82,6 +82,12 @@ This file is the source of truth for rules, milestones, the bug list and future 
 - "Edit details" button on the subject page opens the Add subject form prefilled, plus Official result (grade + optional mark). The prototype had no way to edit a subject or record its result.
 - Backup card: Download backup / Restore from file (Merge or Replace) / Load sample subjects (only when empty) / Clear everything, replacing the prototype's JSON text box.
 
+## Visual bug list: Ken's picks (28 Oct 2026, prototype "gradi Phone Fixes Prototype"; waiting for "UI locked", then ships merged into the Import build)
+- Part names: B (name wraps, narrower score boxes).
+- Ladder: A (band letters inside the bar, boundary numbers underneath, no legend).
+- Empty Home: B for phone (keep the stat cards quiet: muted "–" with "Needs a result" / "Needs a mark", "No subjects yet" under the session title, Add subject button). Desktop not decided yet.
+- Tab bar Add: keep the current raised teal square (Ken changed his mind), just a little bigger so it stands out.
+
 ## Visual bug list (cosmetic, ships in a batch)
 - Phone: long part names (e.g. "Quiz 2") get cut off in the marks editor because the score boxes take the width.
 - Phone: ladder scale labels "C 65 D 75 HD 85" crowd together.
