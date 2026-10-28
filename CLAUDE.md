@@ -63,6 +63,7 @@ This file is the source of truth for rules, milestones, the bug list and future 
 ## Milestones
 - [x] M1 (28 Oct 2026): React + Vite app, local only. Tested grade maths, Dexie storage with uid/updatedAt/delete marks, screens from A v6, Settings (session picker, backup download/restore, sample subjects, clear everything, sync placeholder).
 - [x] M2 (28 Oct 2026): PWA install (icons, manifest, offline via vite-plugin-pwa) + GitHub Pages deploy at https://mfjiae.github.io/gradi/ with a test-and-deploy GitHub Action (same as moni's; Pages source = GitHub Actions). Phone updates arrive on the next open after a deploy.
+- [x] M2.1 (28 Oct 2026): year picker (Settings stepper ◀ year ▾ ▶ and the Add/Edit subject dropdown; years run 2025 to the current Sydney calendar year automatically, plus any year a saved subject uses) and the Grade bands card as an aligned table (Grade | Marks | Grade points).
 - [ ] M3: Sync to private `mfjiae/gradi-data` (adapt moni's sync.js / merge.js / github.js): fine-grained token on each device, newest edit wins, delete marks, refuses a public data repo. Settings sync section.
 - [ ] Seed: Ken's real grades as a backup file made on his PC (never in this repo), loaded with Restore from file.
 - [ ] M4 extras (open decisions, ask Ken): unequal part weights, drop-lowest / best N of M (M1 skills tests), bonus marks, deadlines, GPA trend chart.
@@ -70,9 +71,6 @@ This file is the source of truth for rules, milestones, the bug list and future 
 ## Beyond the prototype in M1 (tell Ken; change if he wants)
 - "Edit details" button on the subject page opens the Add subject form prefilled, plus Official result (grade + optional mark). The prototype had no way to edit a subject or record its result.
 - Backup card: Download backup / Restore from file (Merge or Replace) / Load sample subjects (only when empty) / Clear everything, replacing the prototype's JSON text box.
-
-## Next update (noted, not built; needs a UI prototype and "UI locked" first)
-- Settings, Current session: replace the free-typed year box with a year dropdown plus left/right arrows to step the year quickly. Years start at 2025 and the top year is the current calendar year, so 2027 appears by itself in 2027 (computed from the date, nothing to update by hand). Open points: also list any year a saved subject uses if it is outside the range; same picker for the Year field in Add/Edit subject.
 
 ## Visual bug list (cosmetic, ships in a batch)
 - Phone: long part names (e.g. "Quiz 2") get cut off in the marks editor because the score boxes take the width.

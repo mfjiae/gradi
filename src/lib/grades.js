@@ -187,6 +187,19 @@ export function guessSession(d = new Date()) {
   return { year: m === 1 ? y - 1 : y, session: 'Summer' };
 }
 
+// Years offered in the year pickers: FIRST_YEAR up to the current calendar year (Sydney time), so a new year
+// appears by itself on 1 January. Years already used by saved subjects, and the current session's year, are
+// always included even if outside that range. Ascending.
+export const FIRST_YEAR = 2025;
+export const calendarYear = (now = new Date()) =>
+  Number(new Intl.DateTimeFormat('en-AU', { timeZone: 'Australia/Sydney', year: 'numeric' }).format(now));
+export function yearOptions(extra = [], now = new Date()) {
+  const set = new Set();
+  for (let y = FIRST_YEAR; y <= calendarYear(now); y++) set.add(y);
+  for (const y of extra) if (Number.isInteger(y) && y > 1900 && y < 3000) set.add(y);
+  return [...set].sort((a, b) => a - b);
+}
+
 /* ---------- Home ---------- */
 // The marks still to come in a list of subjects, biggest first.
 export function pendingAcross(subjects, limit = 6) {

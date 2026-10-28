@@ -83,7 +83,10 @@ svg.ic { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-wid
 .in:focus { border-color: var(--accent); outline: none; }
 .in.num { width: 64px; text-align: right; }
 .in.numw { width: 56px; text-align: right; }
-.in.yearw { width: 76px; text-align: right; }
+.stepper { display: flex; align-items: center; gap: 8px; }
+.stepper .btn { min-width: 44px; }
+.stepper select.in { width: 110px; text-align: center; text-align-last: center; }
+.stepper .btn:disabled { opacity: 0.4; cursor: default; }
 .in:disabled { opacity: 0.5; }
 .comp { border: 1px solid var(--border); border-radius: 14px; background: var(--bg); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 .comp-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
@@ -170,3 +173,8 @@ textarea.in { padding: 10px; min-height: 140px; resize: vertical; font-family: u
 .tr.two { grid-template-columns: minmax(0, 1fr) 72px; }
 .tr.two > :nth-child(2) { justify-self: end; text-align: right; }
 .tr.sess .nm small { font-weight: 400; }
+
+.tr.bands { grid-template-columns: minmax(0, 1fr) 90px 110px; }
+.tr.bands > :nth-child(2) { justify-self: start; text-align: left; }
+.tr.bands > :nth-child(3) { justify-self: end; text-align: right; }
+.tr.bands:not(.th) { cursor: default; }

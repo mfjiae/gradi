@@ -1,13 +1,16 @@
 // Settings: current session, sync (placeholder until M3), backup and restore, grade bands.
 import { useRef, useState } from 'react';
-import { SESSIONS, BANDS, num } from '../lib/grades.js';
+import { SESSIONS, BANDS, yearOptions } from '../lib/grades.js';
 import { buildBackup, parseBackup, planRestore, backupFileName } from '../lib/backup.js';
 import * as store from '../lib/store.js';
 import { sampleSubjects } from '../lib/sample.js';
-import { Pill, Field } from './ui.jsx';
+import { Pill } from './ui.jsx';
 import { useArm } from './hooks.js';
 
-function SessionCard({ current }) {
+function SessionCard({ current, years }) {
+  const list = yearOptions([...years, current.year]);
+  const at = list.indexOf(current.year);
+  const setYear = (y) => store.setCurrent({ year: y, session: current.session });
   return (
     <div className="card">
       <h3 className="card-title">Current session</h3>
@@ -16,8 +19,13 @@ function SessionCard({ current }) {
           <button type="button" key={x} className={`chip ${current.session === x ? 'on' : ''}`} aria-pressed={current.session === x}
             onClick={() => store.setCurrent({ year: current.year, session: x })}>{x}</button>
         ))}
-        <Field className="yearw" numeric value={current.year} aria-label="Year"
-          onCommit={(v) => { const y = num(v); if (y && y > 1900 && y < 3000) store.setCurrent({ year: Math.round(y), session: current.session }); }} />
+      </div>
+      <div className="stepper">
+        <button type="button" className="btn sm" aria-label="Previous year" disabled={at <= 0} onClick={() => setYear(list[at - 1])}>◀</button>
+        <select className="in" aria-label="Year" value={current.year} onChange={(e) => setYear(Number(e.target.value))}>
+          {list.map((y) => <option key={y} value={y}>{y}</option>)}
+        </select>
+        <button type="button" className="btn sm" aria-label="Next year" disabled={at >= list.length - 1} onClick={() => setYear(list[at + 1])}>▶</button>
       </div>
       <div className="note">Home shows only subjects in this session. Older sessions stay under Subjects and Past sessions.</div>
     </div>
@@ -102,24 +110,28 @@ function DataCard({ count }) {
   );
 }
 
+const RANGE = { HD: '85–100', D: '75–84', C: '65–74', P: '50–64', F: '0–49' };
 function BandsCard() {
   return (
     <div className="card">
       <h3 className="card-title">Grade bands</h3>
-      <div className="plist">
-        {BANDS.map((b) => <div key={b.k}><span><Pill band={b} /> {b.min}{b.k === 'HD' ? '–100' : '+'}</span><b>{b.gp} grade points</b></div>)}
+      <div className="tbl">
+        <div className="tr th bands"><span>Grade</span><span>Marks</span><span>Grade points</span></div>
+        {BANDS.map((b) => (
+          <div className="tr bands" key={b.k}><span><Pill band={b} /></span><span>{RANGE[b.k]}</span><b>{b.gp}</b></div>
+        ))}
       </div>
       <div className="note">Bands use the whole-number mark. GPA weights each subject by credit points. Pass, not graded is left out of GPA and WAM.</div>
     </div>
   );
 }
 
-export default function Settings({ current, count }) {
+export default function Settings({ current, count, years }) {
   return (
     <>
       <div className="head"><h1 className="h1">Settings</h1></div>
       <div className="grid g2">
-        <SessionCard current={current} />
+        <SessionCard current={current} years={years} />
         <SyncCard />
         <DataCard count={count} />
         <BandsCard />

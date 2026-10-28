@@ -1,10 +1,10 @@
 // Add subject / Edit details. Same form as the prototype's Add subject; editing also sets the official result.
 import { useEffect, useRef, useState } from 'react';
-import { SESSIONS, OFFICIAL_GRADES, DEFAULT_CP, DEFAULT_TARGET } from '../lib/grades.js';
+import { SESSIONS, OFFICIAL_GRADES, DEFAULT_CP, DEFAULT_TARGET, yearOptions } from '../lib/grades.js';
 
 const GRADE_LABEL = { HD: 'HD', D: 'D', C: 'C', P: 'P', F: 'F', PASS: 'Pass, not graded' };
 
-export default function SubjectForm({ subject, current, onSave, onClose }) {
+export default function SubjectForm({ subject, current, years = [], onSave, onClose }) {
   const editing = !!subject;
   const [f, setF] = useState(() => ({
     code: subject?.code ?? '',
@@ -16,6 +16,7 @@ export default function SubjectForm({ subject, current, onSave, onClose }) {
     grade: subject?.official?.grade ?? '',
     mark: subject?.official?.mark == null ? '' : String(subject.official.mark),
   }));
+  const yearList = yearOptions([...years, current.year, Number(f.year)]);
   const first = useRef(null);
   useEffect(() => {
     first.current?.focus();
@@ -37,7 +38,7 @@ export default function SubjectForm({ subject, current, onSave, onClose }) {
         <label>Subject code<input ref={first} className="in" value={f.code} onChange={set('code')} placeholder="e.g. 48531_EA" /></label>
         <label>Name (optional)<input className="in" value={f.name} onChange={set('name')} /></label>
         <div className="grid g2">
-          <label>Year<input className="in" inputMode="decimal" value={f.year} onChange={set('year')} /></label>
+          <label>Year<select className="in" value={f.year} onChange={set('year')}>{yearList.map((y) => <option key={y} value={y}>{y}</option>)}</select></label>
           <label>Session<select className="in" value={f.session} onChange={set('session')}>{SESSIONS.map((x) => <option key={x}>{x}</option>)}</select></label>
         </div>
         <div className="grid g2">

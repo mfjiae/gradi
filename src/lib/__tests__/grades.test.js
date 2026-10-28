@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   band, calc, needed, result, bandOf, overall, ceil1, fmt, num, groupSessions, guessSession, isCurrent,
-  pendingAcross, defaultWhatIf, subBand,
+  pendingAcross, defaultWhatIf, subBand, yearOptions, calendarYear,
 } from '../grades.js';
 
 let n = 0;
@@ -210,5 +210,20 @@ describe('sessions and helpers', () => {
     expect(num('abc')).toBeNull();
     expect(defaultWhatIf({ avg: null })).toBe(70);
     expect(defaultWhatIf({ avg: 77.6 })).toBe(78);
+  });
+});
+
+describe('year options', () => {
+  it('start at 2025 and end at the current calendar year', () => {
+    expect(yearOptions([], new Date('2026-10-28T03:00:00Z'))).toEqual([2025, 2026]);
+    expect(yearOptions([], new Date('2025-06-01T03:00:00Z'))).toEqual([2025]);
+  });
+  it('add a new year by themselves on 1 January (Sydney time)', () => {
+    expect(yearOptions([], new Date('2026-12-31T13:00:00Z'))).toEqual([2025, 2026, 2027]); // 1 Jan 2027, 00:00 Sydney
+    expect(yearOptions([], new Date('2026-12-31T12:59:00Z'))).toEqual([2025, 2026]); // 31 Dec 2026, 23:59 Sydney
+    expect(calendarYear(new Date('2027-07-01T00:00:00Z'))).toBe(2027);
+  });
+  it('still list years outside the range that subjects use, without duplicates', () => {
+    expect(yearOptions([2024, 2026, 2030, 2026, 'x', 12.5], new Date('2026-10-28T03:00:00Z'))).toEqual([2024, 2025, 2026, 2030]);
   });
 });

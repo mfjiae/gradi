@@ -68,7 +68,7 @@ export default function App() {
         back={() => go('subjects')} />
     );
   } else if (route.view === 'subjects') page = <Subjects subjects={subjects} current={current} open={open} />;
-  else if (route.view === 'settings') page = <Settings current={current} count={subjects.length} />;
+  else if (route.view === 'settings') page = <Settings current={current} count={subjects.length} years={subjects.map((x) => x.year)} />;
   else page = <Home subjects={subjects} current={current} open={open} go={go} />;
 
   const navBtn = (n, cls) => (
@@ -94,7 +94,7 @@ export default function App() {
         </button>
       </nav>
       {modal && (modal.mode === 'add' || editing) && (
-        <SubjectForm subject={editing} current={current} onSave={saveForm} onClose={closeModal} />
+        <SubjectForm subject={editing} current={current} years={(subjects ?? []).map((x) => x.year)} onSave={saveForm} onClose={closeModal} />
       )}
     </div>
   );
