@@ -6,12 +6,15 @@ import { Pill, Row } from './ui.jsx';
 import { useLocalPref } from './hooks.js';
 
 
-function Stat({ label, color, tint, value, children }) {
+// A big number card. With no number yet the dash is quiet grey (it looked like a colored bar) and, on an empty
+// Home, a short reason replaces the "this session" line.
+function Stat({ label, color, tint, value, reason, children }) {
+  const none = value === '—';
   return (
-    <div className={`card ${tint}`}>
+    <div className={`card ${tint} ${none ? 'stat-empty' : ''}`}>
       <div className="eyebrow" style={{ color: `var(${color})` }}>{label}</div>
-      <div className="big" style={{ color: `var(${color})` }}>{value}</div>
-      <div className="note">{children}</div>
+      <div className="big" style={{ color: `var(${color})` }}>{none ? '–' : value}</div>
+      <div className="note">{reason ?? children}</div>
     </div>
   );
 }
@@ -51,23 +54,32 @@ function PastSessions({ subjects, current, open }) {
   );
 }
 
-export default function Home({ subjects, current, open, go }) {
+export default function Home({ subjects, current, open, go, add }) {
   const subs = subjects.filter((s) => isCurrent(s, current));
   const cur = overall(subs);
   const done = overall(subjects, { onlyOfficial: true });
   const all = overall(subjects);
   const pend = pendingAcross(subs.filter((s) => !s.official));
+  const empty = subjects.length === 0;
   return (
     <>
-      <div className="head">
-        <h1 className="h1">{sessionName(current)}</h1>
-        <span className="pillbtn">{fmt(done.gained, 0)} credit points gained · {subs.length} subject{subs.length === 1 ? '' : 's'} now</span>
-      </div>
+      {empty ? (
+        <div className="stack home-empty">
+          <h1 className="h1">{sessionName(current)}</h1>
+          <div className="note">No subjects yet</div>
+        </div>
+      ) : (
+        <div className="head">
+          <h1 className="h1">{sessionName(current)}</h1>
+          <span className="pillbtn">{fmt(done.gained, 0)} credit points gained · {subs.length} subject{subs.length === 1 ? '' : 's'} now</span>
+        </div>
+      )}
       <div className="grid g3">
-        <Stat label="GPA · all sessions" color="--hd" tint="tint-g" value={fmt(done.gpa, 2)}>this session on track <b>{fmt(cur.gpa, 2)}</b></Stat>
-        <Stat label="WAM · all sessions" color="--c" tint="tint-b" value={fmt(done.avg)}>this session <b>{cur.avg == null ? '—' : `${fmt(cur.avg)}%`}</b></Stat>
-        <Stat label="GPA if every target is hit" color="--warn" tint="tint-o" value={fmt(all.gpaTarget, 2)}>this session <b>{fmt(cur.gpaTarget, 2)}</b></Stat>
+        <Stat label="GPA · all sessions" color="--hd" tint="tint-g" value={fmt(done.gpa, 2)} reason={empty ? 'Needs a result' : null}>this session on track <b>{fmt(cur.gpa, 2)}</b></Stat>
+        <Stat label="WAM · all sessions" color="--c" tint="tint-b" value={fmt(done.avg)} reason={empty ? 'Needs a mark' : null}>this session <b>{cur.avg == null ? '—' : `${fmt(cur.avg)}%`}</b></Stat>
+        <Stat label="GPA if every target is hit" color="--warn" tint="tint-o" value={fmt(all.gpaTarget, 2)} reason={empty ? 'Needs a subject' : null}>this session <b>{fmt(cur.gpaTarget, 2)}</b></Stat>
       </div>
+      {empty && <div><button type="button" className="btn primary" onClick={add}>Add subject</button></div>}
       <div className="cols">
         <div className="stack">
           <div className="card">

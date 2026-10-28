@@ -1,4 +1,4 @@
-// Settings: current session, sync between devices (like moni), backup and restore, grade bands.
+// Settings: current session, sync between devices (like moni), backup and restore, grade bands, import from text.
 import { useRef, useState } from 'react';
 import { SESSIONS, BANDS, yearOptions } from '../lib/grades.js';
 import { buildBackup, parseBackup, planRestore, backupFileName } from '../lib/backup.js';
@@ -9,6 +9,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { sampleSubjects } from '../lib/sample.js';
 import { Pill } from './ui.jsx';
 import { useArm } from './hooks.js';
+import ImportCard from './ImportCard.jsx';
 
 function SessionCard({ current, years }) {
   const list = yearOptions([...years, current.year]);
@@ -220,6 +221,7 @@ export default function Settings({ current, count, years }) {
         <SyncCard />
         <DataCard count={count} />
         <BandsCard />
+        <div className="span-all"><ImportCard /></div>
       </div>
     </>
   );

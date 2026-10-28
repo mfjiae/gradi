@@ -79,7 +79,7 @@ export default function App() {
     );
   } else if (route.view === 'subjects') page = <Subjects subjects={subjects} current={current} open={open} />;
   else if (route.view === 'settings') page = <Settings current={current} count={subjects.length} years={subjects.map((x) => x.year)} />;
-  else page = <Home subjects={subjects} current={current} open={open} go={go} />;
+  else page = <Home subjects={subjects} current={current} open={open} go={go} add={() => setModal({ mode: 'add' })} />;
 
   const navBtn = (n, cls) => (
     <button type="button" key={n.id} className={`${cls} ${active === n.id ? 'on' : ''}`} aria-current={active === n.id ? 'page' : undefined} onClick={() => go(n.id)}>

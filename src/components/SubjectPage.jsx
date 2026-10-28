@@ -59,8 +59,8 @@ function CompEditor({ s, r, save, arm }) {
               {c.items.map((i) => {
                 const g = isNum(i.score) && isNum(i.max) && i.max > 0;
                 return (
-                  <div className="irow" key={i.id}>
-                    <Field value={i.name} aria-label="Part name" onCommit={(v) => save((x) => E.setPartField(x, c.id, i.id, 'name', v))} />
+                  <div className="irow part" key={i.id}>
+                    <Field wrap value={i.name} aria-label="Part name" onCommit={(v) => save((x) => E.setPartField(x, c.id, i.id, 'name', v))} />
                     <span className="inl">
                       <Field className="num" numeric value={i.score} placeholder="—" aria-label={`${i.name} score`} onCommit={(v) => save((x) => E.setPartField(x, c.id, i.id, 'score', v))} />
                       {' / '}

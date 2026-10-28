@@ -1,6 +1,6 @@
 // Shared UI pieces: icons, grade pill, ladder bar, inputs that save when you leave them, tap-again buttons.
 import { useEffect, useRef, useState } from 'react';
-import { fmt } from '../lib/grades.js';
+import { fmt, BANDS } from '../lib/grades.js';
 
 const PATHS = {
   home: <path d="M3 11l9-8 9 8M5 10v10h14V10" />,
@@ -29,8 +29,13 @@ export function Ladder({ r, proj = false, legend = false }) {
         {showProj && <i className="lad-proj" style={{ left: `${Math.min(100, Math.max(0, r.proj))}%` }} />}
         <i className="lad-target" style={{ left: `${Math.min(100, r.T)}%` }} />
       </div>
-      <div className="lad-scale">
-        {[[50, 'P'], [65, 'C'], [75, 'D'], [85, 'HD']].map(([v, k]) => <span key={k} style={{ left: `${v}%` }}>{k} {v}</span>)}
+      <div className="lad-bands" aria-hidden="true">
+        {[...BANDS].reverse().map((b, k, a) => (
+          <span key={b.k} style={{ flex: (a[k + 1]?.min ?? 100) - b.min, '--bc': `var(${b.c})` }}>{b.k}</span>
+        ))}
+      </div>
+      <div className="lad-scale" aria-hidden="true">
+        {[50, 65, 75, 85].map((v) => <span key={v} style={{ left: `${v}%` }}>{v}</span>)}
       </div>
       {legend && (
         <div className="lad-legend">
@@ -45,24 +50,31 @@ export function Ladder({ r, proj = false, legend = false }) {
 }
 
 // A text or number box that saves when you leave it (or press Enter), so the numbers don't jump while typing.
-export function Field({ value, onCommit, numeric = false, className = '', ...rest }) {
+// wrap: a name box that grows onto more lines instead of cutting long names off (phone marks editor).
+export function Field({ value, onCommit, numeric = false, wrap = false, className = '', ...rest }) {
   const shown = value == null ? '' : String(value);
   const [text, setText] = useState(shown);
   const focused = useRef(false);
+  const box = useRef(null);
   useEffect(() => { if (!focused.current) setText(shown); }, [shown]);
+  useEffect(() => {
+    const el = box.current;
+    if (!wrap || !el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  });
   const commit = () => { if (text !== shown) onCommit(text); };
-  return (
-    <input
-      className={`in ${className}`}
-      inputMode={numeric ? 'decimal' : undefined}
-      value={text}
-      onChange={(e) => setText(e.target.value)}
-      onFocus={() => { focused.current = true; }}
-      onBlur={() => { focused.current = false; commit(); }}
-      onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-      {...rest}
-    />
-  );
+  const props = {
+    className: `in ${wrap ? 'wrap' : ''} ${className}`,
+    inputMode: numeric ? 'decimal' : undefined,
+    value: text,
+    onChange: (e) => setText(wrap ? e.target.value.replace(/\n/g, ' ') : e.target.value),
+    onFocus: () => { focused.current = true; },
+    onBlur: () => { focused.current = false; commit(); },
+    onKeyDown: (e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } },
+    ...rest,
+  };
+  return wrap ? <textarea ref={box} rows={1} {...props} /> : <input {...props} />;
 }
 
 // A table row you can click or reach with the keyboard.

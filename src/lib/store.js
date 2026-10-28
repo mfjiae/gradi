@@ -78,6 +78,18 @@ export async function clearAll() {
   requestSync();
 }
 
+// Import from text: save new and updated subjects in one go. Clears any old delete mark so an imported subject
+// isn't removed again by sync. Never deletes.
+export async function importSubjects(list) {
+  if (!list.length) return;
+  const now = Date.now();
+  await db.transaction('rw', db.subjects, db.tombstones, async () => {
+    await db.subjects.bulkPut(list.map((s) => stamp(s, now)));
+    await db.tombstones.bulkDelete(list.map((s) => s.uid));
+  });
+  requestSync();
+}
+
 export async function addSubjects(list) {
   const now = Date.now();
   await db.subjects.bulkPut(list.map((s) => stamp(s, now)));
