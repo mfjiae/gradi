@@ -23,7 +23,7 @@ This file is the source of truth for rules, milestones, the bug list and future 
 - PUBLIC repo. Never commit real grades, backups or seed files. `.gitignore` is an allowlist and also blocks `*backup*.json`, `*seed*.json`, `*grades*.json`. Tests and samples use fake subjects (SAMPLE_A...).
 - Real grades come from Ken's screenshots; transcribe them for Ken to check before they go anywhere. They live on his PC (`D:\Documents\Claude\Handoffs\28-10-2026_gradi-grades-transcription.md`), and reach the app through Settings → Restore from file.
 - Claude has no access to gradi-data and shouldn't need it.
-- Every record has a stable `uid` and `updatedAt`. Every write goes through `src/lib/store.js`, which stamps `updatedAt` and calls `requestSync()` (a no-op until M3). Deletes leave a delete mark (tombstone).
+- Every record has a stable `uid` and `updatedAt`. Every write goes through `src/lib/store.js`, which stamps `updatedAt` and calls `requestSync()` (sync.js hooks in). Sync's own writes (`sync.js` writeLocal) go straight to the database so they don't trigger another sync. Deletes leave a delete mark (tombstone).
 - Database changes (`db.js`): a table's key can never change in place (the upgrade fails and the app stays on "Loading…"). Drop the table in one version (`name: null`), re-create it in the next. Test an UPGRADE with seeded data before pushing a schema change.
 - Dark theme only, no toggle. Color tokens live in `src/index.css`.
 
@@ -45,12 +45,12 @@ This file is the source of truth for rules, milestones, the bug list and future 
   Component: `{ id, name, weight, single, hurdle, items[] }`; part: `{ id, name, score, max, w }`.
 - A subject syncs as ONE record: if the same subject is edited on two devices before they sync, the newer edit wins for the whole subject.
 - `meta` table: `current` = current session `{ year, session, updatedAt }` (synced); `persistAsked` (this device only). First run guesses the session from the date (Feb-Jun Autumn, Jul-Nov Spring, Dec-Jan Summer).
-- Snapshot (backup now, sync later) = `{ version, subjects, tombstones, current }` (`src/lib/merge.js`).
+- Snapshot (backup file and the synced gradi.json) = `{ version, subjects, tombstones, current }` (`src/lib/merge.js`).
 - Backup file: `{ app: 'gradi', backupVersion: 1, savedAt, snapshot }`, named `gradi-backup-YYYY-MM-DD.json` (Sydney date).
   Restore Merge = adds what's missing (even subjects deleted here earlier), newest edit wins, never deletes. Replace = device matches the file exactly (delete marks for the rest).
 
 ## Code map
-- `src/lib/grades.js` grade maths · `edit.js` pure subject edits · `store.js` database actions · `db.js` Dexie schema · `merge.js` snapshot merge · `backup.js` backup/restore · `sample.js` fake sample subjects · `display.js` Need labels
+- `src/lib/grades.js` grade maths · `sync.js` + `github.js` sync with gradi-data · `edit.js` pure subject edits · `store.js` database actions · `db.js` Dexie schema · `merge.js` snapshot merge · `backup.js` backup/restore · `sample.js` fake sample subjects · `display.js` Need labels
 - `src/components/`: `Home.jsx` (Layout A v6), `Subjects.jsx`, `SubjectPage.jsx` (current = Marks | What do I need? + What if; official = S2: breakdown | Official result), `SubjectForm.jsx` (Add subject / Edit details), `Settings.jsx`, `ui.jsx`, `hooks.js`
 - `src/App.jsx`: shell, sidebar + phone tab bar, pages by address (`#/subjects`, `#/subject/<uid>`, `#/settings`) so the back button works.
 
@@ -65,7 +65,7 @@ This file is the source of truth for rules, milestones, the bug list and future 
 - [x] M1 (28 Oct 2026): React + Vite app, local only. Tested grade maths, Dexie storage with uid/updatedAt/delete marks, screens from A v6, Settings (session picker, backup download/restore, sample subjects, clear everything, sync placeholder).
 - [x] M2 (28 Oct 2026): PWA install (icons, manifest, offline via vite-plugin-pwa) + GitHub Pages deploy at https://mfjiae.github.io/gradi/ with a test-and-deploy GitHub Action (same as moni's; Pages source = GitHub Actions). Phone updates arrive on the next open after a deploy.
 - [x] M2.1 (28 Oct 2026): year picker (Settings stepper ◀ year ▾ ▶ and the Add/Edit subject dropdown; years run 2025 to the current Sydney calendar year automatically, plus any year a saved subject uses) and the Grade bands card as an aligned table (Grade | Marks | Grade points).
-- [ ] M3: Sync to private `mfjiae/gradi-data` (adapt moni's sync.js / merge.js / github.js): fine-grained token on each device, newest edit wins, delete marks, refuses a public data repo. Settings sync section.
+- [x] M3 (28 Oct 2026): sync like moni (`src/lib/sync.js`, `github.js`). File `gradi.json` in the private `mfjiae/gradi-data` repo; fine-grained token (Only gradi-data, Contents read/write) stored on each device only (meta row `sync`, never in backups or the synced file). Syncs 1.5 s after each edit, on open, when the app comes back to the screen, when back online, and with Sync now. Newest edit wins per subject, delete marks, current session newest wins, retries on a clash with another device, refuses a public repo. While sync is on: Load sample subjects is hidden (so fake data can't reach gradi-data) and Clear everything warns that it clears every synced device.
 - [ ] Seed: Ken's real grades as a backup file made on his PC (never in this repo), loaded with Restore from file.
 - [ ] M4 extras (open decisions, ask Ken): unequal part weights, drop-lowest / best N of M (M1 skills tests), bonus marks, deadlines, GPA trend chart.
 
@@ -74,7 +74,6 @@ This file is the source of truth for rules, milestones, the bug list and future 
 - Backup card: Download backup / Restore from file (Merge or Replace) / Load sample subjects (only when empty) / Clear everything, replacing the prototype's JSON text box.
 
 ## Next update (noted, not built)
-- M3 sync "like moni": same behavior as moni (private repo gradi-data, file `gradi.json`, token on each device; syncs automatically a moment after each edit, when the app is opened or comes back to the front, and when the phone goes back online; plus a manual Sync now button and a status line in Settings). Opus high. Needs "build".
 - Grade bands table (Settings): make it symmetric. The Marks column is centered under its header, with Grade on the left and Grade points on the right, instead of sitting skewed off-center. Small UI change: show a prototype and wait for "UI locked" and "build" (can ship with M3 or alone).
 
 ## Visual bug list (cosmetic, ships in a batch)

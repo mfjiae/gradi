@@ -178,3 +178,11 @@ textarea.in { padding: 10px; min-height: 140px; resize: vertical; font-family: u
 .tr.bands > :nth-child(2) { justify-self: start; text-align: left; }
 .tr.bands > :nth-child(3) { justify-self: end; text-align: right; }
 .tr.bands:not(.th) { cursor: default; }
+
+/* sync card */
+.sync-row { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.sync-row b { color: var(--text); font-weight: 600; }
+.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; line-height: 1.45; }
+.steps a { color: var(--accent); }
+.steps b { color: var(--muted); }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--other); }

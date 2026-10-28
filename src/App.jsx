@@ -6,6 +6,7 @@ import { db, requestPersistentStorage } from './lib/db.js';
 import { guessSession } from './lib/grades.js';
 import * as E from './lib/edit.js';
 import * as store from './lib/store.js';
+import { syncNow } from './lib/sync.js';
 import { Icon } from './components/ui.jsx';
 import Home from './components/Home.jsx';
 import Subjects from './components/Subjects.jsx';
@@ -37,7 +38,16 @@ export default function App() {
     const on = () => { setRoute(parseHash()); window.scrollTo(0, 0); };
     window.addEventListener('hashchange', on);
     requestPersistentStorage();
-    return () => window.removeEventListener('hashchange', on);
+    // Sync when the app opens, when it comes back to the screen, and when the connection returns (like moni).
+    syncNow();
+    const onVisible = () => { if (document.visibilityState === 'visible') syncNow(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('online', syncNow);
+    return () => {
+      window.removeEventListener('hashchange', on);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('online', syncNow);
+    };
   }, []);
 
   const go = (view, id) => { window.location.hash = id ? `/${view}/${encodeURIComponent(id)}` : view === 'home' ? '/' : `/${view}`; };

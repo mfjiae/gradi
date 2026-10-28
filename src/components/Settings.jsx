@@ -1,8 +1,11 @@
-// Settings: current session, sync (placeholder until M3), backup and restore, grade bands.
+// Settings: current session, sync between devices (like moni), backup and restore, grade bands.
 import { useRef, useState } from 'react';
 import { SESSIONS, BANDS, yearOptions } from '../lib/grades.js';
 import { buildBackup, parseBackup, planRestore, backupFileName } from '../lib/backup.js';
 import * as store from '../lib/store.js';
+import { db } from '../lib/db.js';
+import { connect, disconnect, syncNow, DEFAULT_REPO } from '../lib/sync.js';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { sampleSubjects } from '../lib/sample.js';
 import { Pill } from './ui.jsx';
 import { useArm } from './hooks.js';
@@ -32,17 +35,99 @@ function SessionCard({ current, years }) {
   );
 }
 
+const TOKEN_URL = 'https://github.com/settings/personal-access-tokens/new';
+function ago(ms) {
+  if (!ms) return 'never';
+  const sec = Math.round((Date.now() - ms) / 1000);
+  if (sec < 60) return 'just now';
+  if (sec < 3600) return `${Math.round(sec / 60)} min ago`;
+  if (sec < 86400) return `${Math.round(sec / 3600)} h ago`;
+  return new Date(ms).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+}
+
+// Sync between devices, the same way moni does it.
 function SyncCard() {
+  const cfg = useLiveQuery(() => db.meta.get('sync'), []);
+  const [repo, setRepo] = useState(DEFAULT_REPO);
+  const [token, setToken] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [msg, setMsg] = useState('');
+  const [replace, setReplace] = useState(false);
+  const connected = !!cfg?.token;
+  const showForm = !connected || replace;
+
+  const onConnect = async (e) => {
+    e.preventDefault();
+    if (!token.trim()) { setError('Paste your token first.'); return; }
+    setBusy(true); setError(''); setMsg('');
+    try {
+      const r = await connect(token, cfg?.repo ?? repo);
+      setToken(''); setReplace(false);
+      setMsg(r.status === 'ok' ? 'Connected. Your grades are synced.' : r.message);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const onSyncNow = async () => {
+    setBusy(true); setMsg('');
+    const r = await syncNow();
+    setBusy(false);
+    setMsg(r.status === 'ok' ? 'Synced.' : r.message ?? 'Sync is off.');
+  };
+
   return (
     <div className="card">
-      <h3 className="card-title" style={{ '--head': 'var(--c)' }}>Sync</h3>
-      <div className="note">Not built yet. Planned the way moni does it: a private GitHub repo (gradi-data) holds your grades, each device keeps its own copy, newest edit wins. For now your grades stay on this device; use Backup to move them.</div>
-      <div><button type="button" className="btn sm" disabled>Connect GitHub (later)</button></div>
+      <h3 className="card-title" style={{ '--head': 'var(--c)' }}>Sync between devices</h3>
+      {connected && (
+        <>
+          <div className="sync-row note">
+            <span>Saving to <b>{cfg.repo}</b></span>
+            <span>{cfg.syncing ? 'Syncing…' : `Synced ${ago(cfg.lastSyncAt)}`}</span>
+          </div>
+          {cfg.lastError && <div className="warnbox" role="alert">{cfg.lastError.message}</div>}
+          <div className="add-row">
+            <button type="button" className="btn sm primary" disabled={busy} onClick={onSyncNow}>{busy ? 'Syncing…' : 'Sync now'}</button>
+            {!replace && <button type="button" className="btn sm ghost" onClick={() => setReplace(true)}>Paste a new token</button>}
+            {!replace && <button type="button" className="btn sm ghost danger" onClick={async () => { await disconnect(); setMsg('Sync turned off on this device. Your grades stay here.'); }}>Turn off sync</button>}
+          </div>
+        </>
+      )}
+      {showForm && (
+        <form className="stack" onSubmit={onConnect} noValidate>
+          {!connected && <div className="note">Your grades are saved to your private <b>gradi-data</b> repo, so your phone and computer see the same thing. Do this once on each device:</div>}
+          <ol className="steps note">
+            <li>Open <a href={TOKEN_URL} target="_blank" rel="noreferrer">GitHub → new fine-grained token</a> (sign in if asked).</li>
+            <li>Name it <em>gradi</em>. Set an expiration (gradi tells you when it runs out).</li>
+            <li>Repository access: <b>Only select repositories</b> → <b>gradi-data</b>.</li>
+            <li>Permissions → <b>Add permissions</b> → search <em>contents</em> → pick <b>Contents</b>, set it to <b>Read and write</b>. Nothing else.</li>
+            <li>Generate, copy the token, and paste it below.</li>
+          </ol>
+          {!connected && (
+            <label className="field">Data repo
+              <input className="in" value={repo} onChange={(e) => setRepo(e.target.value)} autoCapitalize="off" autoCorrect="off" spellCheck="false" />
+            </label>
+          )}
+          <label className="field">Token
+            <input className="in" type="password" value={token} placeholder="github_pat_…" autoComplete="off" onChange={(e) => { setToken(e.target.value); setError(''); }} />
+          </label>
+          {error && <div className="warnbox" role="alert">{error}</div>}
+          <div className="add-row">
+            <button type="submit" className="btn sm primary" disabled={busy}>{busy ? 'Connecting…' : connected ? 'Save new token' : 'Connect and sync'}</button>
+            {replace && <button type="button" className="btn sm ghost" onClick={() => setReplace(false)}>Cancel</button>}
+          </div>
+          <div className="note">The token is stored only on this device. It can only touch gradi-data, nothing else on your GitHub.</div>
+        </form>
+      )}
+      {msg && <div className="okbox" role="status">{msg}</div>}
     </div>
   );
 }
 
 function DataCard({ count }) {
+  const syncOn = !!useLiveQuery(() => db.meta.get('sync'), [])?.token;
   const arm = useArm();
   const file = useRef(null);
   const [msg, setMsg] = useState(null);
@@ -82,15 +167,15 @@ function DataCard({ count }) {
   return (
     <div className="card">
       <h3 className="card-title">Backup</h3>
-      <div className="note">Your grades are stored on this device only. A backup is one file you can keep or load on another device.</div>
+      <div className="note">A backup is one file of all your grades. Keep one now and then, even with sync on.</div>
       <div className="add-row">
         <button type="button" className="btn sm" onClick={download}>Download backup</button>
         <button type="button" className="btn sm" onClick={() => file.current?.click()}>Restore from file</button>
         <input ref={file} type="file" accept="application/json,.json" hidden onChange={pick} />
-        {count === 0 && <button type="button" className="btn sm" onClick={async () => { const cur = await store.getCurrent(); await store.addSubjects(sampleSubjects(cur)); setMsg({ ok: true, text: 'Added 8 fake sample subjects. Clear everything removes them.' }); }}>Load sample subjects</button>}
+        {count === 0 && !syncOn && <button type="button" className="btn sm" onClick={async () => { const cur = await store.getCurrent(); await store.addSubjects(sampleSubjects(cur)); setMsg({ ok: true, text: 'Added 8 fake sample subjects. Clear everything removes them.' }); }}>Load sample subjects</button>}
         {count > 0 && (
           <button type="button" className="btn sm danger" onClick={() => arm.tap('clear', async () => { await store.clearAll(); setMsg({ ok: true, text: 'Cleared every subject on this device.' }); })}>
-            {arm.armed === 'clear' ? 'Tap again to clear' : 'Clear everything'}
+            {arm.armed === 'clear' ? (syncOn ? 'Tap again: clears every synced device' : 'Tap again to clear') : 'Clear everything'}
           </button>
         )}
       </div>
