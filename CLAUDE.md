@@ -13,7 +13,7 @@ This file is the source of truth for rules, milestones, the bug list and future 
 - American spelling, metric units. Use subject abbreviations when talking to Ken, not codes.
 
 ## Stack
-- React + Vite static app. Will be hosted on GitHub Pages at https://mfjiae.github.io/gradi/ (base `/gradi/`) from M2.
+- React + Vite static PWA, live on GitHub Pages at https://mfjiae.github.io/gradi/ (base `/gradi/`). Every push to `main` runs tests and redeploys.
 - IndexedDB via Dexie (`src/lib/db.js`) is each device's copy. No server.
 - Tests: Vitest (`npm test`). Lint: `npm run lint` (oxlint).
 - Reference app: moni (repo mfjiae/moni) for look, structure, backup and sync.
