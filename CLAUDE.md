@@ -64,7 +64,7 @@ This file is the source of truth for rules, milestones, the bug list and future 
 ## Milestones
 - [x] M1 (28 Oct 2026): React + Vite app, local only. Tested grade maths, Dexie storage with uid/updatedAt/delete marks, screens from A v6, Settings (session picker, backup download/restore, sample subjects, clear everything, sync placeholder).
 - [x] M2 (28 Oct 2026): PWA install (icons, manifest, offline via vite-plugin-pwa) + GitHub Pages deploy at https://mfjiae.github.io/gradi/ with a test-and-deploy GitHub Action (same as moni's; Pages source = GitHub Actions). Phone updates arrive on the next open after a deploy.
-- [x] M2.1 (28 Oct 2026): year picker (Settings stepper ◀ year ▾ ▶ and the Add/Edit subject dropdown; years run 2025 to the current Sydney calendar year automatically, plus any year a saved subject uses) and the Grade bands card as an aligned table (Grade | Marks | Grade points).
+- [x] M2.1 (28 Oct 2026): year picker (Settings stepper ◀ year ▾ ▶ and the Add/Edit subject dropdown; years run 2025 to the current Sydney calendar year automatically, plus any year a saved subject uses) and the Grade bands card as an aligned table (Grade | Marks | Grade points), symmetric: Marks centered under its header, Grade left, Grade points right.
 - [x] M3 (28 Oct 2026): sync like moni (`src/lib/sync.js`, `github.js`). File `gradi.json` in the private `mfjiae/gradi-data` repo; fine-grained token (Only gradi-data, Contents read/write) stored on each device only (meta row `sync`, never in backups or the synced file). Syncs 1.5 s after each edit, on open, when the app comes back to the screen, when back online, and with Sync now. Newest edit wins per subject, delete marks, current session newest wins, retries on a clash with another device, refuses a public repo. While sync is on: Load sample subjects is hidden (so fake data can't reach gradi-data) and Clear everything warns that it clears every synced device.
 - [ ] Seed: Ken's real grades as a backup file made on his PC (never in this repo), loaded with Restore from file.
 - [ ] M4 extras (open decisions, ask Ken): unequal part weights, drop-lowest / best N of M (M1 skills tests), bonus marks, deadlines, GPA trend chart.
@@ -72,9 +72,6 @@ This file is the source of truth for rules, milestones, the bug list and future 
 ## Beyond the prototype in M1 (tell Ken; change if he wants)
 - "Edit details" button on the subject page opens the Add subject form prefilled, plus Official result (grade + optional mark). The prototype had no way to edit a subject or record its result.
 - Backup card: Download backup / Restore from file (Merge or Replace) / Load sample subjects (only when empty) / Clear everything, replacing the prototype's JSON text box.
-
-## Next update (noted, not built)
-- Grade bands table (Settings): make it symmetric. The Marks column is centered under its header, with Grade on the left and Grade points on the right, instead of sitting skewed off-center. Small UI change: show a prototype and wait for "UI locked" and "build" (can ship with M3 or alone).
 
 ## Visual bug list (cosmetic, ships in a batch)
 - Phone: long part names (e.g. "Quiz 2") get cut off in the marks editor because the score boxes take the width.

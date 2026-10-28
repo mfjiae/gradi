@@ -174,8 +174,9 @@ textarea.in { padding: 10px; min-height: 140px; resize: vertical; font-family: u
 .tr.two > :nth-child(2) { justify-self: end; text-align: right; }
 .tr.sess .nm small { font-weight: 400; }
 
-.tr.bands { grid-template-columns: minmax(0, 1fr) 90px 110px; }
-.tr.bands > :nth-child(2) { justify-self: start; text-align: left; }
+.tr.bands { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+.tr.bands > :nth-child(1) { justify-self: start; text-align: left; }
+.tr.bands > :nth-child(2) { justify-self: center; text-align: center; }
 .tr.bands > :nth-child(3) { justify-self: end; text-align: right; }
 .tr.bands:not(.th) { cursor: default; }
 
