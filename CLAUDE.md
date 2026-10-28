@@ -85,8 +85,9 @@ This file is the source of truth for rules, milestones, the bug list and future 
 ## Visual bug list: Ken's picks (28 Oct 2026, prototype "gradi Phone Fixes Prototype"; waiting for "UI locked", then ships merged into the Import build)
 - Part names: B (name wraps, narrower score boxes).
 - Ladder: A (band letters inside the bar, boundary numbers underneath, no legend).
-- Empty Home: B for phone (keep the stat cards quiet: muted "–" with "Needs a result" / "Needs a mark", "No subjects yet" under the session title, Add subject button). Desktop not decided yet.
-- Tab bar Add: keep the current raised teal square (Ken changed his mind), just a little bigger so it stands out.
+- Empty Home: B for phone (keep the stat cards quiet: muted "–" with "Needs a result" / "Needs a mark", "No subjects yet" under the session title, Add subject button). Desktop matches the phone.
+- Tab bar Add: keep the current raised teal square, a little bigger (about 50 px), with a clearer plus and a ring in the bar color, so it reads as a button with a purpose. Ken: it looked like it stuck up for no reason.
+- These four ship with the Import build (Ken: "ship with the next big update"). Still need his "UI locked" and "build".
 
 ## Visual bug list (cosmetic, ships in a batch)
 - Phone: long part names (e.g. "Quiz 2") get cut off in the marks editor because the score boxes take the width.
