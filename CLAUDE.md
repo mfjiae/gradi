@@ -70,6 +70,14 @@ This file is the source of truth for rules, milestones, the bug list and future 
 - [ ] Seed: Ken's real grades as a backup file made on his PC (never in this repo), loaded with Restore from file.
 - [ ] M4 extras (open decisions, ask Ken): unequal part weights, drop-lowest / best N of M (M1 skills tests), bonus marks, deadlines, GPA trend chart.
 
+## Next update: Import from text (UI locked 28 Oct 2026, layout A Compact; NOT built yet, build on Opus high)
+- A new "Import from text" card in Settings, under Backup. Textarea, Preview, Clear, collapsible "Text format" help. Preview lists each subject as a row (code, session, cp, official result, tag New / Updated / Skipped; tap to open its assessments, SAMPLE_A-style first update starts open), then Import N subjects / Cancel. Done state: green message, box cleared, Open Subjects / Import more.
+- Format: blank line between subjects. First line `CODE: Name | Autumn 2026 | 6cp | D 77` (name optional; result optional: `D 77`, `HD`, `PASS`; optional `target 85`, `no gpa`, `no wam`). Assessment line `Name | 25% | 5/5, 20/20 | hurdle 50`: one mark = single, several = parts; `-/100` = not marked; named part `Quiz 1=8/10`, else Part 1, Part 2.
+- Matching: same code + year + session = update (replaces that subject's assessments, shows changed marks old struck / new teal); otherwise new. Never deletes. Goes through store.js so sync picks it up.
+- Problems are listed by line: a warning (weights not 100%) still imports; an error (unreadable mark) skips only that subject.
+- Needs parser tests (every format case, error lines, update vs new) in a pure `src/lib/importText.js`. Grade maths unchanged.
+- Merge with it when locked: the phone fixes on the bug list (prototype: gradi Phone Fixes Prototype).
+
 ## Beyond the prototype in M1 (tell Ken; change if he wants)
 - "Edit details" button on the subject page opens the Add subject form prefilled, plus Official result (grade + optional mark). The prototype had no way to edit a subject or record its result.
 - Backup card: Download backup / Restore from file (Merge or Replace) / Load sample subjects (only when empty) / Clear everything, replacing the prototype's JSON text box.
