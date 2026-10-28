@@ -72,6 +72,10 @@ This file is the source of truth for rules, milestones, the bug list and future 
 - "Edit details" button on the subject page opens the Add subject form prefilled, plus Official result (grade + optional mark). The prototype had no way to edit a subject or record its result.
 - Backup card: Download backup / Restore from file (Merge or Replace) / Load sample subjects (only when empty) / Clear everything, replacing the prototype's JSON text box.
 
+## Next update (noted, not built)
+- M3 sync "like moni": same behavior as moni (private repo gradi-data, file `gradi.json`, token on each device; syncs automatically a moment after each edit, when the app is opened or comes back to the front, and when the phone goes back online; plus a manual Sync now button and a status line in Settings). Opus high. Needs "build".
+- Grade bands table (Settings): make it symmetric. The Marks column is centered under its header, with Grade on the left and Grade points on the right, instead of sitting skewed off-center. Small UI change: show a prototype and wait for "UI locked" and "build" (can ship with M3 or alone).
+
 ## Visual bug list (cosmetic, ships in a batch)
 - Phone: long part names (e.g. "Quiz 2") get cut off in the marks editor because the score boxes take the width.
 - Phone: ladder scale labels "C 65 D 75 HD 85" crowd together.
