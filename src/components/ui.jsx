@@ -8,9 +8,19 @@ const PATHS = {
   gear: <><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" /></>,
   plus: <path d="M12 5v14M5 12h14" />,
   back: <path d="M15 5l-7 7 7 7" />,
+  next: <path d="M9 5l7 7-7 7" />,
+  study: <><rect x="4" y="4" width="16" height="16" rx="3" /><path d="M8 12l3 3 5-6" /></>,
+  star: <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" />,
+  calendar: <><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" /></>,
+  repeat: <path d="M4 12a7 7 0 0112-5l2 2M20 12a7 7 0 01-12 5l-2-2M18 4v5h-5M6 20v-5h5" />,
+  bell: <path d="M6 16v-5a6 6 0 0112 0v5l2 2H4zM10 20a2 2 0 004 0" />,
+  status: <><circle cx="12" cy="12" r="8" /><path d="M12 4a8 8 0 010 16z" fill="currentColor" /></>,
+  check: <path d="M5 12l5 5 9-10" />,
+  grip: <path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" />,
+  x: <path d="M6 6l12 12M18 6L6 18" />,
 };
-export const Icon = ({ name }) => (
-  <svg className="ic" viewBox="0 0 24 24" aria-hidden="true">{PATHS[name]}</svg>
+export const Icon = ({ name, className = '' }) => (
+  <svg className={`ic ${className}`} viewBox="0 0 24 24" aria-hidden="true">{PATHS[name]}</svg>
 );
 
 export const Pill = ({ band }) => (band

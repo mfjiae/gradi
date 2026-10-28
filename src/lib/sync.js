@@ -4,7 +4,7 @@
 // when the connection returns, and from Settings → Sync now. The token is stored on this device only
 // (meta row 'sync'); it is never in backups or the synced file.
 import { db } from './db.js';
-import { mergeSnapshots, sameSnapshot, stableStringify } from './merge.js';
+import { mergeSnapshots, sameSnapshot, stableStringify, isDeleted } from './merge.js';
 import { checkRepo, readFile, writeFile, SyncError } from './github.js';
 import { readSnapshot, setSyncHook } from './store.js';
 
@@ -12,19 +12,22 @@ export const DATA_PATH = 'gradi.json';
 export const DEFAULT_REPO = 'mfjiae/gradi-data';
 
 // Apply the merged snapshot without losing edits made while the sync was running:
-// a subject is only overwritten by a version at least as new, and only deleted by a newer delete.
+// a subject or task is only overwritten by a version at least as new, and only deleted by a newer delete.
+async function applyTable(table, incoming, tombstones) {
+  const current = new Map((await table.toArray()).map((r) => [r.uid, r]));
+  const puts = incoming.filter((r) => {
+    const cur = current.get(r.uid);
+    return !cur || ((cur.updatedAt ?? 0) <= (r.updatedAt ?? 0) && stableStringify(cur) !== stableStringify(r));
+  });
+  if (puts.length) await table.bulkPut(puts);
+  const dels = [...current.values()].filter((r) => isDeleted(r, tombstones)).map((r) => r.uid);
+  if (dels.length) await table.bulkDelete(dels);
+}
+
 export async function writeLocal(merged) {
-  await db.transaction('rw', db.subjects, db.tombstones, db.meta, async () => {
-    const current = new Map((await db.subjects.toArray()).map((r) => [r.uid, r]));
-    const puts = merged.subjects.filter((r) => {
-      const cur = current.get(r.uid);
-      return !cur || ((cur.updatedAt ?? 0) <= (r.updatedAt ?? 0) && stableStringify(cur) !== stableStringify(r));
-    });
-    if (puts.length) await db.subjects.bulkPut(puts);
-    const dels = [...current.values()]
-      .filter((r) => merged.tombstones[r.uid] != null && merged.tombstones[r.uid] >= (r.updatedAt ?? 0))
-      .map((r) => r.uid);
-    if (dels.length) await db.subjects.bulkDelete(dels);
+  await db.transaction('rw', db.subjects, db.tasks, db.tombstones, db.meta, async () => {
+    await applyTable(db.subjects, merged.subjects, merged.tombstones);
+    await applyTable(db.tasks, merged.tasks ?? [], merged.tombstones);
     await db.tombstones.bulkPut(Object.entries(merged.tombstones).map(([key, at]) => ({ key, at })));
     if (merged.current) {
       const cur = await db.meta.get('current');

@@ -28,7 +28,7 @@ describe('merge', () => {
     expect(sameSnapshot(mergeSnapshots(a, b), mergeSnapshots(b, a))).toBe(true);
   });
   it('normalizes empty input', () => {
-    expect(normalize(undefined)).toEqual({ version: 1, subjects: [], tombstones: {}, current: null });
+    expect(normalize(undefined)).toEqual({ version: 1, subjects: [], tasks: [], tombstones: {}, current: null });
   });
 });
 

@@ -10,12 +10,9 @@ function SubjectCard({ s, open }) {
   return (
     <div className="card scard" role="button" tabIndex={0} onClick={() => open(s.uid)}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(s.uid); } }}>
-      <div className="card-head">
-        <div>
-          <div className="mid">{s.code}</div>
-          <div className="note">{s.name || 'Subject'} · {sessionName(s)} · {fmt(s.cp, 0)} cp</div>
-        </div>
-        <Pill band={bandOf(s, r)} />
+      <div>
+        <div className="scard-top"><div className="mid">{s.code}</div><Pill band={bandOf(s, r)} /></div>
+        <div className="note">{s.name || 'Subject'} · {sessionName(s)} · {fmt(s.cp, 0)} cp</div>
       </div>
       {res.official ? (
         <div className="stat-row">

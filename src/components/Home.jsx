@@ -1,9 +1,11 @@
 // Home (Layout A v6): all-sessions GPA, WAM and target GPA with this session beneath; this session's subjects;
-// Past sessions under them; "Where the marks are" on the right.
+// Past sessions under them; Due soon (with exam countdowns) and "Where the marks are" on the right.
+// Phones: Due soon comes right after the stats.
 import { calc, bandOf, result, overall, fmt, isCurrent, groupSessions, sessionName, pendingAcross, num } from '../lib/grades.js';
 import { needShort, needColor } from '../lib/display.js';
 import { Pill, Row } from './ui.jsx';
-import { useLocalPref } from './hooks.js';
+import { useLocalPref, useNow } from './hooks.js';
+import { DueSoonCard } from './tasksUi.jsx';
 
 
 // A big number card. With no number yet the dash is quiet grey (it looked like a colored bar) and, on an empty
@@ -54,7 +56,8 @@ function PastSessions({ subjects, current, open }) {
   );
 }
 
-export default function Home({ subjects, current, open, go }) {
+export default function Home({ subjects, tasks = [], current, open, go, onOpenTask }) {
+  const now = useNow();
   const subs = subjects.filter((s) => isCurrent(s, current));
   const cur = overall(subs);
   const done = overall(subjects, { onlyOfficial: true });
@@ -79,9 +82,9 @@ export default function Home({ subjects, current, open, go }) {
         <Stat label="WAM · all sessions" color="--c" tint="tint-b" value={fmt(done.avg)} reason={empty ? 'Needs a mark' : null}>this session <b>{cur.avg == null ? '—' : `${fmt(cur.avg)}%`}</b></Stat>
         <Stat label="GPA if every target is hit" color="--warn" tint="tint-o" value={fmt(all.gpaTarget, 2)} reason={empty ? 'Needs a subject' : null}>this session <b>{fmt(cur.gpaTarget, 2)}</b></Stat>
       </div>
-      <div className="cols">
+      <div className="cols home-cols">
         <div className="stack">
-          <div className="card">
+          <div className="card o2">
             <div className="card-head">
               <h3 className="card-title">Subjects</h3>
               <button type="button" className="link" onClick={() => go('subjects')}>See all</button>
@@ -102,9 +105,11 @@ export default function Home({ subjects, current, open, go }) {
               </div>
             ) : <div className="empty">No subjects in this session. Tap Add subject.</div>}
           </div>
-          <PastSessions subjects={subjects} current={current} open={open} />
+          <div className="o4"><PastSessions subjects={subjects} current={current} open={open} /></div>
         </div>
-        <div className="card">
+        <div className="stack">
+        {!empty && <div className="o1"><DueSoonCard tasks={tasks} subjects={subjects} now={now} onOpen={onOpenTask} go={go} /></div>}
+        <div className="card o3">
           <h3 className="card-title" style={{ '--head': 'var(--warn)' }}>Where the marks are</h3>
           {pend.length ? (
             <div className="tbl">
@@ -116,6 +121,7 @@ export default function Home({ subjects, current, open, go }) {
               ))}
             </div>
           ) : <div className="note">Nothing pending.</div>}
+        </div>
         </div>
       </div>
     </>

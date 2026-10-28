@@ -4,6 +4,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { db } from '../db.js';
 import * as store from '../store.js';
 import { newSubject } from '../edit.js';
+import { newTask } from '../tasks.js';
 import { connect, disconnect, syncNow, DATA_PATH, cleanRepo } from '../sync.js';
 import { toBase64, fromBase64 } from '../github.js';
 
@@ -127,6 +128,37 @@ describe('sync', () => {
   it('backups never include the token', async () => {
     await connect('good', 'mfjiae/gradi-data');
     expect(JSON.stringify(await store.readSnapshot())).not.toContain('good');
+  });
+
+  it('syncs study tasks both ways, with delete marks', async () => {
+    const s = await store.putSubject(newSubject({ code: 'FAKE_A' }));
+    const t = await store.putTask(newTask({ title: 'Read notes', subjectUid: s.uid }));
+    await connect('good', 'mfjiae/gradi-data');
+    expect(gh.data().tasks.map((x) => x.title)).toEqual(['Read notes']);
+    // another device edits the task and adds one
+    const remote = gh.data();
+    const other = { ...newTask({ title: 'Other device', subjectUid: s.uid }), updatedAt: t.updatedAt + 1 };
+    remote.tasks = [{ ...remote.tasks[0], title: 'Edited there', updatedAt: t.updatedAt + 1 }, other];
+    gh.file = JSON.stringify(remote); gh.sha += 1;
+    await syncNow();
+    expect((await db.tasks.toArray()).map((x) => x.title).sort()).toEqual(['Edited there', 'Other device']);
+    // a delete here reaches the file
+    await store.deleteTask(t.uid);
+    await syncNow();
+    expect(gh.data().tasks.map((x) => x.title)).toEqual(['Other device']);
+    expect(gh.data().tombstones[t.uid]).toBeGreaterThan(0);
+  });
+
+  it('a file from an older app (no tasks) keeps the tasks here', async () => {
+    const s = await store.putSubject(newSubject({ code: 'FAKE_A' }));
+    await store.putTask(newTask({ title: 'Mine', subjectUid: s.uid }));
+    await connect('good', 'mfjiae/gradi-data');
+    const old = gh.data();
+    delete old.tasks;
+    gh.file = JSON.stringify(old); gh.sha += 1;
+    await syncNow();
+    expect(await db.tasks.count()).toBe(1);
+    expect(gh.data().tasks).toHaveLength(1);
   });
 
   it('cleans pasted repo links', () => {

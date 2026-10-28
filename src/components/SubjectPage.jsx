@@ -5,6 +5,8 @@ import { calc, needed, bandOf, band, result, fmt, isNum, defaultWhatIf, BANDS, F
 import * as E from '../lib/edit.js';
 import { Icon, Pill, Ladder, Field } from './ui.jsx';
 import { useArm } from './hooks.js';
+import { newParts } from '../lib/tasks.js';
+import DuePrompt from './DuePrompt.jsx';
 
 function SubjectHead({ s, r, onEdit, onDelete, arm }) {
   return (
@@ -25,7 +27,7 @@ function SubjectHead({ s, r, onEdit, onDelete, arm }) {
   );
 }
 
-function CompEditor({ s, r, save, arm }) {
+function CompEditor({ s, r, save, saveAdd, arm }) {
   const label = (c) => c.name || 'component';
   return (
     <div className="stack">
@@ -84,7 +86,7 @@ function CompEditor({ s, r, save, arm }) {
                 );
               })}
               <div className="opts">
-                <button type="button" className="link" onClick={() => save((x) => E.addPart(x, c.id))}>+ Add part</button>
+                <button type="button" className="link" onClick={() => saveAdd((x) => E.addPart(x, c.id))}>+ Add part</button>
                 <span className="note">{out?.size ? 'Parts are weighted by points. Your lowest marks are left out automatically.' : 'Parts are weighted by points.'}</span>
               </div>
             </>
@@ -100,7 +102,7 @@ function CompEditor({ s, r, save, arm }) {
       ))}
       <div className="add-row">
         {[['assignment', 'Assignment'], ['quizzes', 'Quizzes'], ['labs', 'Labs'], ['exam', 'Exam']].map(([k, t]) => (
-          <button type="button" key={k} className="btn sm" onClick={() => save((x) => E.addComponent(x, k))}><Icon name="plus" />{t}</button>
+          <button type="button" key={k} className="btn sm" onClick={() => saveAdd((x) => E.addComponent(x, k))}><Icon name="plus" />{t}</button>
         ))}
       </div>
     </div>
@@ -207,10 +209,21 @@ function OfficialCard({ s, r, save }) {
 
 export default function SubjectPage({ s, save, onEdit, onDelete, back }) {
   const arm = useArm();
+  const [prompt, setPrompt] = useState(null); // new parts waiting for due dates
   if (!s) {
     return <><div className="empty">Subject not found.</div><div><button type="button" className="btn" onClick={back}>Back to subjects</button></div></>;
   }
   const r = calc(s);
+  // Adding an assessment or a part: offer to make study tasks for the new parts (not for finished subjects).
+  const saveAdd = async (fn) => {
+    const before = s;
+    const next = await save(fn);
+    if (!before.official && next) {
+      const parts = newParts(before, next);
+      if (parts.length) setPrompt(parts);
+    }
+  };
+  const due = prompt && <DuePrompt subject={s} parts={prompt} onClose={() => setPrompt(null)} />;
   const crumb = <div><button type="button" className="crumb" onClick={back}><Icon name="back" />Subjects</button></div>;
   if (s.official) {
     return (
@@ -218,9 +231,10 @@ export default function SubjectPage({ s, save, onEdit, onDelete, back }) {
         {crumb}
         <div className="card"><SubjectHead s={s} r={r} onEdit={onEdit} onDelete={onDelete} arm={arm} /></div>
         <div className="cols">
-          <div className="card"><h3 className="card-title">Marks breakdown</h3><div className="note">Reference only. Hidden exam marks are left blank.</div><CompEditor s={s} r={r} save={save} arm={arm} /></div>
+          <div className="card"><h3 className="card-title">Marks breakdown</h3><div className="note">Reference only. Hidden exam marks are left blank.</div><CompEditor s={s} r={r} save={save} saveAdd={saveAdd} arm={arm} /></div>
           <div className="stack"><OfficialCard s={s} r={r} save={save} /></div>
         </div>
+        {due}
       </>
     );
   }
@@ -229,12 +243,13 @@ export default function SubjectPage({ s, save, onEdit, onDelete, back }) {
       {crumb}
       <div className="card"><SubjectHead s={s} r={r} onEdit={onEdit} onDelete={onDelete} arm={arm} /><Ladder r={r} legend /></div>
       <div className="cols">
-        <div className="card"><h3 className="card-title">Marks</h3><CompEditor s={s} r={r} save={save} arm={arm} /></div>
+        <div className="card"><h3 className="card-title">Marks</h3><CompEditor s={s} r={r} save={save} saveAdd={saveAdd} arm={arm} /></div>
         <div className="stack">
           <div className="card"><h3 className="card-title" style={{ '--head': 'var(--hd)' }}>What do I need?</h3><TargetBlock s={s} r={r} save={save} /></div>
           <div className="card"><h3 className="card-title" style={{ '--head': 'var(--review)' }}>What if</h3><WhatIf key={s.uid} s={s} r={r} /></div>
         </div>
       </div>
+      {due}
     </>
   );
 }

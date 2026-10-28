@@ -1,5 +1,5 @@
 // Backup and restore, the moni way. A backup is ONE json file holding the same snapshot sync will use
-// (subjects, delete marks, current session). It never holds a sync token. Pure parts are tested.
+// (subjects, study tasks, delete marks, current session). It never holds a sync token. Pure parts are tested.
 //
 // Restore has two ways:
 //  - Merge (safe): anything missing here is added (even a subject deleted here earlier: restoring a file means you
@@ -36,27 +36,35 @@ export function parseBackup(text) {
   for (const s of data.snapshot.subjects ?? []) {
     if (!s || typeof s.uid !== 'string' || !Array.isArray(s.components ?? [])) throw new Error('This backup file looks damaged.');
   }
+  if (data.snapshot.tasks != null && !Array.isArray(data.snapshot.tasks)) throw new Error('This backup file looks damaged.');
+  for (const t of data.snapshot.tasks ?? []) {
+    if (!t || typeof t.uid !== 'string') throw new Error('This backup file looks damaged.');
+  }
   return { savedAt: Number(data.savedAt) || null, snapshot: normalize(data.snapshot) };
 }
 
+// Subjects and tasks follow the same rules.
 export function planRestore(local, file, mode, now = Date.now()) {
   const l = normalize(local);
   const f = normalize(file);
+  const stampNow = (list) => list.map((r) => ({ ...r, updatedAt: now }));
   if (mode !== 'replace') {
-    const here = new Set(l.subjects.map((r) => r.uid));
-    // File delete marks never remove a subject you have here ("nothing is deleted").
+    const here = new Set([...l.subjects, ...l.tasks].map((r) => r.uid));
+    // File delete marks never remove anything you have here ("nothing is deleted").
     const tombstones = { ...l.tombstones };
     for (const [k, t] of Object.entries(f.tombstones)) if (!here.has(k)) tombstones[k] = Math.max(tombstones[k] ?? 0, t);
-    const added = f.subjects.filter((r) => !here.has(r.uid)).map((r) => ({ ...r, updatedAt: now }));
-    for (const r of added) delete tombstones[r.uid];
-    const both = f.subjects.filter((r) => here.has(r.uid));
-    return mergeSnapshots({ ...l, tombstones }, { subjects: [...both, ...added], tombstones: {}, current: f.current });
+    const pick = (list) => ({ added: stampNow(list.filter((r) => !here.has(r.uid))), both: list.filter((r) => here.has(r.uid)) });
+    const S = pick(f.subjects);
+    const T = pick(f.tasks);
+    for (const r of [...S.added, ...T.added]) delete tombstones[r.uid];
+    return mergeSnapshots({ ...l, tombstones }, { subjects: [...S.both, ...S.added], tasks: [...T.both, ...T.added], tombstones: {}, current: f.current });
   }
   const tombstones = { ...l.tombstones, ...f.tombstones };
-  const inFile = new Set(f.subjects.map((r) => r.uid));
-  for (const r of l.subjects) if (!inFile.has(r.uid)) tombstones[r.uid] = now;
-  const subjects = f.subjects.map((r) => ({ ...r, updatedAt: now }));
-  for (const r of subjects) delete tombstones[r.uid];
+  const inFile = new Set([...f.subjects, ...f.tasks].map((r) => r.uid));
+  for (const r of [...l.subjects, ...l.tasks]) if (!inFile.has(r.uid)) tombstones[r.uid] = now;
+  const subjects = stampNow(f.subjects);
+  const tasks = stampNow(f.tasks);
+  for (const r of [...subjects, ...tasks]) delete tombstones[r.uid];
   const current = f.current ? { ...f.current, updatedAt: now } : l.current;
-  return normalize({ subjects, tombstones, current });
+  return normalize({ subjects, tasks, tombstones, current });
 }

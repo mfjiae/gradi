@@ -128,7 +128,7 @@ function SyncCard() {
   );
 }
 
-function DataCard({ count }) {
+function DataCard({ count, taskCount = 0 }) {
   const syncOn = !!useLiveQuery(() => db.meta.get('sync'), [])?.token;
   const lastBackup = useLiveQuery(() => db.meta.get('lastBackup'), [])?.at;
   const arm = useArm();
@@ -171,9 +171,9 @@ function DataCard({ count }) {
   return (
     <div className="card">
       <h3 className="card-title">Backup</h3>
-      <div className="note">A backup is one file of all your grades. Keep one now and then, even with sync on.</div>
+      <div className="note">A backup is one file of all your grades and study tasks. Keep one now and then, even with sync on.</div>
       <div className="info-box">
-        <div><span>On this device</span><b>{count} subject{count === 1 ? '' : 's'}</b></div>
+        <div><span>On this device</span><b>{count} subject{count === 1 ? '' : 's'}{taskCount ? ` · ${taskCount} task${taskCount === 1 ? '' : 's'}` : ''}</b></div>
         <div><span>Last backup</span><b>{lastBackup ? ago(lastBackup) : 'never'}</b></div>
       </div>
       <div className="add-row">
@@ -182,7 +182,7 @@ function DataCard({ count }) {
         <input ref={file} type="file" accept="application/json,.json" hidden onChange={pick} />
         {count === 0 && !syncOn && <button type="button" className="btn sm" onClick={async () => { const cur = await store.getCurrent(); await store.addSubjects(sampleSubjects(cur)); setMsg({ ok: true, text: 'Added 8 fake sample subjects. Clear everything removes them.' }); }}>Load sample subjects</button>}
         {count > 0 && (
-          <button type="button" className="btn sm danger" onClick={() => arm.tap('clear', async () => { await store.clearAll(); setMsg({ ok: true, text: 'Cleared every subject on this device.' }); })}>
+          <button type="button" className="btn sm danger" onClick={() => arm.tap('clear', async () => { await store.clearAll(); setMsg({ ok: true, text: 'Cleared every subject and task on this device.' }); })}>
             {arm.armed === 'clear' ? (syncOn ? 'Tap again: clears every synced device' : 'Tap again to clear') : 'Clear everything'}
           </button>
         )}
@@ -219,7 +219,7 @@ function BandsCard() {
   );
 }
 
-export default function Settings({ current, count, years }) {
+export default function Settings({ current, count, taskCount, years }) {
   // Desktop: two columns so each card is only as tall as its content (left: session + backup, right: sync +
   // bands), Import full width below. Phone: one column in the order session, sync, backup, bands, import.
   return (
@@ -228,7 +228,7 @@ export default function Settings({ current, count, years }) {
       <div className="set-cols">
         <div className="set-col">
           <div className="o1"><SessionCard current={current} years={years} /></div>
-          <div className="o3"><DataCard count={count} /></div>
+          <div className="o3"><DataCard count={count} taskCount={taskCount} /></div>
         </div>
         <div className="set-col">
           <div className="o2"><SyncCard /></div>

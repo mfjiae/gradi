@@ -199,6 +199,22 @@ export function planImport(blocks, existing = []) {
 
     if (!old) return { status: 'new', line: b.line, subject: next, changes: [] };
     const oldByName = new Map(old.components.map((c) => [c.name.trim().toLowerCase(), c]));
+    // Keep the saved ids of assessments and parts with the same name, so study tasks linked to them stay linked.
+    if (b.components.length) {
+      const usedC = new Set();
+      for (const c of next.components) {
+        const was = oldByName.get(c.name.trim().toLowerCase());
+        if (!was || usedC.has(was.id)) continue;
+        usedC.add(was.id);
+        c.id = was.id;
+        if (c.single && was.single) { if (c.items[0] && was.items[0]) c.items[0].id = was.items[0].id; continue; }
+        const usedI = new Set();
+        for (const i of c.items) {
+          const wi = was.items.find((x) => !usedI.has(x.id) && x.name.trim().toLowerCase() === i.name.trim().toLowerCase());
+          if (wi) { usedI.add(wi.id); i.id = wi.id; }
+        }
+      }
+    }
     const changes = b.components.length
       ? next.components.map((c) => {
         const was = oldByName.get(c.name.trim().toLowerCase());
