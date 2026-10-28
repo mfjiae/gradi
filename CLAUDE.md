@@ -62,7 +62,7 @@ This file is the source of truth for rules, milestones, the bug list and future 
 
 ## Milestones
 - [x] M1 (28 Oct 2026): React + Vite app, local only. Tested grade maths, Dexie storage with uid/updatedAt/delete marks, screens from A v6, Settings (session picker, backup download/restore, sample subjects, clear everything, sync placeholder).
-- [ ] M2: PWA install (icons, manifest, offline) + GitHub Pages deploy with a test-and-deploy GitHub Action (copy moni's).
+- [x] M2 (28 Oct 2026): PWA install (icons, manifest, offline via vite-plugin-pwa) + GitHub Pages deploy at https://mfjiae.github.io/gradi/ with a test-and-deploy GitHub Action (same as moni's; Pages source = GitHub Actions). Phone updates arrive on the next open after a deploy.
 - [ ] M3: Sync to private `mfjiae/gradi-data` (adapt moni's sync.js / merge.js / github.js): fine-grained token on each device, newest edit wins, delete marks, refuses a public data repo. Settings sync section.
 - [ ] Seed: Ken's real grades as a backup file made on his PC (never in this repo), loaded with Restore from file.
 - [ ] M4 extras (open decisions, ask Ken): unequal part weights, drop-lowest / best N of M (M1 skills tests), bonus marks, deadlines, GPA trend chart.
