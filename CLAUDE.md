@@ -79,6 +79,7 @@ This file is the source of truth for rules, milestones, the bug list and future 
 ## Visual bug list (cosmetic, ships in a batch)
 - Phone: long part names (e.g. "Quiz 2") get cut off in the marks editor because the score boxes take the width.
 - Phone: ladder scale labels "C 65 D 75 HD 85" crowd together.
+- Phone, empty Home (no subjects yet, Ken's screenshot 28 Oct): the three stat cards show big "—" that look like colored bars, and the "0 credit points gained · 0 subjects now" pill crowds the session title. Consider an empty-state hint instead.
 - Year box in Settings was too narrow for "2026" (fixed in M1, unreadable text).
 - Phone tab bar "Add" label was dark on dark (fixed in M1, unreadable text).
 
