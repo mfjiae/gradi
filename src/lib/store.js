@@ -155,6 +155,18 @@ export async function saveTask(uid, fields) {
   return next;
 }
 
+// Import from text (Study → Import): new and updated tasks in one go.
+export async function importTasks(list) {
+  if (!list.length) return 0;
+  const now = Date.now();
+  await db.transaction('rw', db.tasks, db.tombstones, async () => {
+    await db.tasks.bulkPut(list.map((t) => stamp(t, now)));
+    await db.tombstones.bulkDelete(list.map((t) => t.uid));
+  });
+  requestSync();
+  return list.length;
+}
+
 export async function setTaskStatus(uid, status) {
   return saveTask(uid, { status });
 }

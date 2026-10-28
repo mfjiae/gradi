@@ -8,6 +8,7 @@ import { Icon } from './ui.jsx';
 import { useLocalPref, useNow } from './hooks.js';
 import { TaskRow, Countdowns } from './tasksUi.jsx';
 import Calendar from './Calendar.jsx';
+import ImportTasks from './ImportTasks.jsx';
 
 // A group of tasks. In manual order each row has a ⋮⋮ handle: drag it (mouse or finger), or focus it and use the
 // arrow keys.
@@ -106,7 +107,7 @@ function Tasks({ tasks, subjects, current, now, onOpen, onNew }) {
       {sort === 'manual' && <div className="note">Drag ⋮⋮ to put tasks in your own order.</div>}
       {!tasks.length ? (
         <div className="empty">
-          {subjects.length ? 'No tasks yet. Tap New, or add an assessment in a subject’s Marks.' : 'Add a subject first. Every task belongs to one.'}
+          {subjects.length ? 'No tasks yet. Tap New or Import, or add an assessment in a subject’s Marks.' : 'Add a subject first. Every task belongs to one.'}
           {subjects.length > 0 && <div><button type="button" className="btn sm primary" style={{ marginTop: 12 }} onClick={() => onNew()}><Icon name="plus" />New task</button></div>}
         </div>
       ) : !groups.length ? <div className="empty">No tasks match the filter.</div> : (
@@ -124,6 +125,7 @@ function Tasks({ tasks, subjects, current, now, onOpen, onNew }) {
 export default function Study({ tasks, subjects, current, onOpen, onNew }) {
   const now = useNow();
   const [view, setView] = useLocalPref('studyView', 'tasks');
+  const [importing, setImporting] = useState(false);
   return (
     <>
       <div className="head">
@@ -131,9 +133,11 @@ export default function Study({ tasks, subjects, current, onOpen, onNew }) {
         <div className="chips">
           <button type="button" className={`chip ${view !== 'calendar' ? 'on' : ''}`} aria-pressed={view !== 'calendar'} onClick={() => setView('tasks')}>Tasks</button>
           <button type="button" className={`chip ${view === 'calendar' ? 'on' : ''}`} aria-pressed={view === 'calendar'} onClick={() => setView('calendar')}>Calendar</button>
+          <button type="button" className="btn sm ghost" disabled={!subjects.length} onClick={() => setImporting(true)}>Import</button>
           <button type="button" className="btn sm primary" disabled={!subjects.length} onClick={() => onNew()}><Icon name="plus" />New</button>
         </div>
       </div>
+      {importing && <ImportTasks tasks={tasks} subjects={subjects} current={current} onClose={() => setImporting(false)} />}
       <Countdowns tasks={tasks} subjects={subjects} now={now} onOpen={onOpen} />
       <div className="card">
         {view === 'calendar'
