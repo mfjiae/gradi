@@ -6,7 +6,7 @@ This file is the source of truth for rules, milestones, the bug list and future 
 ## Workflow rules (Ken's)
 - Never start building until Ken says "build". Until then, plan, prototype and ask.
 - Every UI change: show a prototype in chat first, offer 2-3 labeled alternatives, ask for a preference, wait for "UI locked", then wait for "build" before pushing. Don't push small UI tweaks or design code without confirming.
-- Before every build, say which model and effort to use (e.g. Sonnet medium for look and layout, Opus high for grade maths and synced data) and wait for Ken to confirm.
+- Before every build, say which model and effort to use and wait for Ken to confirm. Pick the cheapest pair that still gives no bugs: Sonnet low/medium for look, layout and doc edits; Sonnet high or Opus medium for code that writes saved data (parsers, importers); Opus high only for grade maths or sync changes. Give one line of why. Re-state it whenever the task changes.
 - "Fix now" without asking is for logic or code bugs only (wrong numbers, unreadable text, unclickable buttons). Cosmetic changes go on the visual bug list below and ship in a batch.
 - When Ken reports visual bugs, add them to the bug list unless he says fix now. "Note it, don't build yet" means exactly that.
 - Prototypes show both phone and desktop, unless the change is for one device only.
