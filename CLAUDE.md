@@ -9,6 +9,7 @@ This file is the source of truth for rules, milestones, the bug list and future 
 - Before every build, say which model and effort to use (e.g. Sonnet medium for look and layout, Opus high for grade maths and synced data) and wait for Ken to confirm.
 - "Fix now" without asking is for logic or code bugs only (wrong numbers, unreadable text, unclickable buttons). Cosmetic changes go on the visual bug list below and ship in a batch.
 - When Ken reports visual bugs, add them to the bug list unless he says fix now. "Note it, don't build yet" means exactly that.
+- Prototypes show both phone and desktop, unless the change is for one device only.
 - Small milestones, tested before pushing; show what changed in a few lines. Point out UX problems proactively.
 - American spelling, metric units. Use subject abbreviations when talking to Ken, not codes.
 
@@ -80,6 +81,7 @@ This file is the source of truth for rules, milestones, the bug list and future 
 - Phone: long part names (e.g. "Quiz 2") get cut off in the marks editor because the score boxes take the width.
 - Phone: ladder scale labels "C 65 D 75 HD 85" crowd together.
 - Phone, empty Home (no subjects yet, Ken's screenshot 28 Oct): the three stat cards show big "—" that look like colored bars, and the "0 credit points gained · 0 subjects now" pill crowds the session title. Consider an empty-state hint instead.
+- Phone tab bar: the Add button's teal square sticks up above the bar; Ken doesn't like it. Make it sit inside the bar, the same as the other tabs.
 - Year box in Settings was too narrow for "2026" (fixed in M1, unreadable text).
 - Phone tab bar "Add" label was dark on dark (fixed in M1, unreadable text).
 
