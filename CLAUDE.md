@@ -33,13 +33,16 @@ This file is the source of truth for rules, milestones, the bug list and future 
 - GPA = grade points weighted by credit points (default 6). WAM = marks weighted by credit points.
 - Official result (grade, optional mark) wins over components for that subject. "Pass, not graded" (PASS) has no grade points and is left out of GPA and WAM but its credit points count as gained.
 - Per-subject switches `countsGpa` / `countsWam` (default on). A subject with no mark is never in WAM.
+- WAM uses each subject's whole-number mark (`result().mark` = Math.round of the average), like UTS. So "this session" WAM can differ slightly from the average of the Avg column, which shows decimals (e.g. 82.2, 73.3, 86.4 -> 82 + 73 + 86 = 80.3, not 80.6). Deliberate, not a bug.
 - Home: the main numbers are all sessions, official results only. "This session" figures (on-track GPA, WAM from averages so far) sit beneath.
 - "GPA if every target is hit": official subjects at their grade, every other subject at its target's band, including subjects with no marks yet (M1 change from the prototype, which skipped those).
 - Parts within a component are weighted by points (total scored / total available), like Canvas. Custom part weights are a later extra (`w`, null for now).
 - Count the best N of M parts (component `best`, `keepBest` in grades.js; agreed 28 Oct 2026): marked parts ranked by percent (tie: earlier part). Nothing is dropped until more than N are marked; then the lowest marked parts are "Not counted" (still shown, greyed). While fewer than N are marked, the first unmarked parts fill the slots and other unmarked parts are "Optional". No rule when best is empty, >= the number of parts, or the component is a single mark. An official result still wins.
+- Bonus marks (agreed 1 Nov 2026): a score above its max is kept and shown as entered (20.5/20, part percent 102.5%), but counts as full marks in every calculation (`countedScore`): capped per part before parts are totaled, so a bonus can't make up for another part, a component can't pass 100%, and best-N ranks it as 100%.
 - Weights that don't add to 100% show a warning; marks are scaled to 100 meanwhile.
 - A hurdle fails the subject (F) only once its component is fully marked below the hurdle; before that it shows "Below hurdle so far".
 - Marks and weights are plain numbers; round only for display. Required marks round UP to one decimal so the target is actually met.
+- Trend (`sessionTrend`, 1 Nov 2026): running GPA and WAM after each session, oldest first, official results only up to and including that session (the last real point = Home's all-sessions numbers). While the current session has unfinished subjects, one more point (proj) = all official results + the current session's unfinished subjects at their marks so far; it replaces the current session's real point if that session already has some results. Sessions without any official result (other than the current one) add no point.
 - Checked privately (script kept outside the repo) against Ken's official UTS record: overall GPA, WAM and credit points match, and so do the component totals of the subjects with full breakdowns.
 
 ## Data model
@@ -55,13 +58,14 @@ This file is the source of truth for rules, milestones, the bug list and future 
 
 ## Code map
 - `src/lib/grades.js` grade maths · `tasks.js` study task logic (dates, groups, repeats, countdowns, links) · `importText.js` import from text · `importTasks.js` import tasks from text · `sync.js` + `github.js` sync with gradi-data · `edit.js` pure subject edits · `store.js` database actions · `db.js` Dexie schema · `merge.js` snapshot merge · `backup.js` backup/restore · `sample.js` fake sample subjects · `display.js` Need labels
-- `src/components/`: `Home.jsx` (Layout A v6), `Subjects.jsx`, `SubjectPage.jsx` (current = Marks | What do I need? + What if; official = S2: breakdown | Official result), `SubjectForm.jsx` (Add subject / Edit details), `Settings.jsx`, `ImportCard.jsx`, `Study.jsx` (Tasks list) + `Calendar.jsx`, `TaskForm.jsx` (New/Edit task pop-up), `ImportTasks.jsx` (Study → Import pop-up), `DuePrompt.jsx` (due dates after adding an assessment), `tasksUi.jsx` (task row, countdowns, Due soon), `ui.jsx`, `hooks.js`
+- `src/components/`: `Home.jsx` (Layout A v6), `Trend.jsx` (Home Trend card), `Subjects.jsx`, `SubjectPage.jsx` (current = Marks | What do I need? + What if; official = S2: breakdown | Official result), `SubjectForm.jsx` (Add subject / Edit details), `Settings.jsx`, `ImportCard.jsx`, `Study.jsx` (Tasks list) + `Calendar.jsx`, `TaskForm.jsx` (New/Edit task pop-up), `ImportTasks.jsx` (Study → Import pop-up), `DuePrompt.jsx` (due dates after adding an assessment), `tasksUi.jsx` (task row, countdowns, Due soon), `ui.jsx`, `hooks.js`
 - `src/App.jsx`: shell, sidebar + phone tab bar (Home, Subjects, Add, Study, Settings; Add makes a task on Study, a subject elsewhere), pages by address (`#/subjects`, `#/subject/<uid>`, `#/study`, `#/settings`) so the back button works. The task pop-up lives here.
 
 ## Design (locked from the prototypes, Layout A v6)
 - Look of moni: dark only, IBM Plex Sans, teal accent #2EF2D4, tinted cards, desktop sidebar, phone bottom tab bar.
 - Band colors: HD green, D teal, C blue, P purple, F red.
 - Home: three stat cards (GPA all sessions, WAM all sessions, GPA if every target is hit; "this session ..." beneath each), then left column Subjects table + Past sessions (hidden by default, aligned table, session rows with GPA · WAM and total cp), right column "Where the marks are".
+- Home Trend card (option A, locked 1 Nov 2026): left column between Subjects and Past sessions; line of running GPA or WAM per session (GPA/WAM chips, each device remembers), value above each dot, session labels ("Aut 25") below, y-axis zoomed to the data. Current unfinished session = dashed line to a hollow dot, with the note "Dashed = Spr 26 if you stay on track". Hidden on an empty Home. Phone order: stats, Due soon, Subjects, Trend, Where the marks are, Past sessions.
 - Home also has a Due soon card (exam countdowns inside it, then overdue / next 7 days / reminder window) at the top of the right column; on phones it comes right after the stats.
 - Subjects page: This session / All sessions toggle, cards; the grade pill sits top right, centered with the code (D).
 - Study tab (M5, locked 28 Oct 2026): place A (own tab), exam countdowns at the top. Tasks: By status (Overdue, Open, In progress, Done collapsed), sorted by due date by default; Sort (Due date, Manual order with ⋮⋮ drag or arrow keys, Important first, Name), Group (Status, Due date, Subject, None), Filter (subject, important only). Calendar: Month on desktop, List on phones, Week too; each device remembers its view. New task = Full pop-up (title, icon row status / important / due / repeat / reminder with a dot when set, Subject (required), Link to an assessment part, Details), a sheet on phones. Due-date prompt = pop-up after adding an assessment or part in Marks (not for subjects with an official result): each new part becomes a task; Skip adds them undated; ✕ adds none. Reminders show only inside the app. Started empty: existing subjects got no tasks.
@@ -77,9 +81,10 @@ This file is the source of truth for rules, milestones, the bug list and future 
 - [x] M4.1 (28 Oct 2026): count the best N of M parts (option A, automatic): "Count the best [N] of M parts" box on split components, dropped parts greyed with "Not counted" (unneeded unmarked ones "Optional"); import `best 4` (or `best 4 of 5`) after the weight or the marks. Merged: Settings layout A + B (desktop two columns: Current session + Backup | Sync + Grade bands, Import from text full width below; phone one column session, sync, backup, bands, import; Backup shows "On this device: N subjects" and "Last backup") and the empty Home Add subject button removed.
 - [x] M5 (28 Oct 2026): study tracker (see Design: Study tab), tasks table (Dexie v2, upgrade tested with seeded v1 data in tests and in a browser), tasks in sync, backup and restore, linked tasks auto-Done on a mark, repeating tasks, exam countdowns, Home Due soon. Merged: grade pill fix on subject cards (option D). Settings Backup shows the task count; Clear everything clears tasks too.
 - [x] M5.1 (28 Oct 2026): import tasks from text (see Design: Import tasks; `src/lib/importTasks.js`, `store.importTasks`, tested).
-- [ ] Seed: Ken's real grades, now easiest through Import from text (Claude writes the text from the transcription; never in this repo).
-- [ ] M4 extras (open decisions, ask Ken): unequal part weights, bonus marks, GPA trend chart.
-- [ ] M5 later: calendar Day, 3 days and Year views (agreed for a later update).
+- [x] Seed: Ken's real grades are in the app (done by Ken through Import from text; never in this repo).
+- [x] M6 (1 Nov 2026): Home Trend card (option A) with `sessionTrend` (tested; checked privately against Ken's record: 6.75, 6.63, 6.58, Spring 26 on track 6.47), and bonus marks count as full (`countedScore`, tested).
+- [ ] M4 extras: unequal part weights (parked 1 Nov 2026 until a current subject needs it; IES labs was the only example and has an official result). Bonus marks done in M6.
+- Skipped (Ken, 1 Nov 2026): calendar Day, 3 days and Year views. List, Week and Month are enough.
 
 ## Beyond the prototype in M1 (tell Ken; change if he wants)
 - "Edit details" button on the subject page opens the Add subject form prefilled, plus Official result (grade + optional mark). The prototype had no way to edit a subject or record its result.
@@ -89,4 +94,4 @@ This file is the source of truth for rules, milestones, the bug list and future 
 - (empty) The grade pill fix shipped in M5.
 
 ## Future ideas
-- GPA trend chart across sessions. Phone notifications for reminders (needs a server or push service; in-app only for now).
+- Phone notifications for reminders (needs a server or push service; in-app only for now).

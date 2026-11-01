@@ -44,7 +44,10 @@ export const ceil1 = (n) => Math.ceil(n * 10 - 1e-9) / 10;
 export const band = (mark) => BANDS.find((b) => Math.round(mark) >= b.min) || FAIL;
 
 const isMarked = (i) => isNum(i.score) && isNum(i.max) && i.max > 0;
-const partPct = (i) => i.score / i.max;
+// Bonus marks (Ken, 1 Nov 2026): a score above its max is kept and shown as entered (20.5/20),
+// but counts as full marks (20/20) in every calculation. Capped per part, before parts are totaled.
+export const countedScore = (i) => Math.min(i.score, i.max);
+const partPct = (i) => countedScore(i) / i.max;
 
 // "Count the best N of M parts" for a split component (c.best = N). Rule agreed with Ken (28 Oct 2026):
 //  - Marked parts are ranked by percent (ties: the earlier part wins). The best N marked parts count.
@@ -98,7 +101,7 @@ export function calc(s, assume) {
       const share = wOf(i) / sw;
       if (isMarked(i)) {
         cg += share;
-        ce += (share * i.score) / i.max;
+        ce += (share * countedScore(i)) / i.max;
       } else {
         pending.push({ cid: c.id, iid: i.id, label: c.single ? c.name : `${c.name} · ${i.name}`, pts: share * cw * scale, max: num(i.max) });
       }
@@ -243,3 +246,33 @@ export function pendingAcross(subjects, limit = 6) {
 
 // The what-if slider starting value for a part: your average so far, or 70 if nothing is marked.
 export const defaultWhatIf = (r) => Math.max(0, Math.min(100, Math.round(r.avg ?? 70)));
+
+/* ---------- Trend (Home, 1 Nov 2026) ---------- */
+// Short session label for chart axes: "Aut 25", "Spr 26", "Sum 25".
+export const sessionShort = (x) => `${String(x.session).slice(0, 3)} ${String(x.year).slice(-2)}`;
+
+// Running GPA and WAM after each session, oldest first. Each point uses official results only, from that
+// session and every earlier one, so the last real point equals Home's "all sessions" numbers.
+// If the current session still has subjects without an official result, one more point is added (proj: true):
+// all official results plus the current session's unfinished subjects at their marks so far ("on track").
+// A session whose subjects have no official result yet (other than the current one) adds no point.
+export function sessionTrend(subjects, current) {
+  const official = subjects.filter((s) => s.official);
+  const keys = [...new Set(official.map(sessionKey))].sort();
+  const points = keys.map((k) => {
+    const s0 = official.find((s) => sessionKey(s) === k);
+    const o = overall(official.filter((s) => sessionKey(s) <= k));
+    return { key: k, year: s0.year, session: s0.session, gpa: o.gpa, avg: o.avg, proj: false };
+  });
+  const open = current ? subjects.filter((s) => isCurrent(s, current) && !s.official) : [];
+  if (open.length) {
+    const o = overall([...official, ...open]);
+    const k = sessionKey(current);
+    const p = { key: k, year: current.year, session: current.session, gpa: o.gpa, avg: o.avg, proj: true };
+    // The current session can already have some official results: replace its real point with the projection.
+    const at = points.findIndex((x) => x.key === k);
+    if (at >= 0) points.splice(at, 1, p);
+    else points.push(p);
+  }
+  return points;
+}

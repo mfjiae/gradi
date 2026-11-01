@@ -269,7 +269,7 @@ textarea.in.wrap { resize: none; overflow: hidden; min-height: 38px; padding: 8p
 @media (max-width: 899px) {
   .set-cols { display: flex; flex-direction: column; }
   .set-col { display: contents; }
-  .o1 { order: 1; } .o2 { order: 2; } .o3 { order: 3; } .o4 { order: 4; }
+  .o1 { order: 1; } .o2 { order: 2; } .o3 { order: 3; } .o4 { order: 4; } .o5 { order: 5; }
 }
 
 /* subject cards: grade pill top right, centred with the code (bug list, 28 Oct 2026) */
@@ -410,3 +410,14 @@ textarea.in.tk-details { min-height: 72px; font-family: inherit; font-size: 14px
   .home-cols > .stack { display: contents; }
   .home-cols > .stack > * { min-width: 0; }
 }
+
+/* Home Trend card (option A, 1 Nov 2026) */
+.trend-body { min-width: 0; }
+.trend-svg { display: block; overflow: visible; }
+.trend-grid { stroke: #2c2a28; stroke-width: 1; }
+.trend-tick { fill: var(--other); font-size: 11.5px; }
+.trend-val { fill: var(--text); font-size: 12px; font-weight: 500; }
+.trend-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.trend-line.dash { stroke-dasharray: 5 5; }
+.trend-dot { fill: var(--accent); stroke: var(--accent); stroke-width: 2; }
+.trend-dot.proj { fill: var(--surface); }

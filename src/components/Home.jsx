@@ -1,11 +1,12 @@
 // Home (Layout A v6): all-sessions GPA, WAM and target GPA with this session beneath; this session's subjects;
-// Past sessions under them; Due soon (with exam countdowns) and "Where the marks are" on the right.
-// Phones: Due soon comes right after the stats.
+// Trend (1 Nov 2026) then Past sessions under them; Due soon (with exam countdowns) and "Where the marks are" on the right.
+// Phones: Due soon, Subjects, Trend, Where the marks are, Past sessions.
 import { calc, bandOf, result, overall, fmt, isCurrent, groupSessions, sessionName, pendingAcross, num } from '../lib/grades.js';
 import { needShort, needColor } from '../lib/display.js';
 import { Pill, Row } from './ui.jsx';
 import { useLocalPref, useNow } from './hooks.js';
 import { DueSoonCard } from './tasksUi.jsx';
+import TrendCard from './Trend.jsx';
 
 
 // A big number card. With no number yet the dash is quiet grey (it looked like a colored bar) and, on an empty
@@ -105,11 +106,12 @@ export default function Home({ subjects, tasks = [], current, open, go, onOpenTa
               </div>
             ) : <div className="empty">No subjects in this session. Tap Add subject.</div>}
           </div>
-          <div className="o4"><PastSessions subjects={subjects} current={current} open={open} /></div>
+          {!empty && <div className="o3"><TrendCard subjects={subjects} current={current} /></div>}
+          <div className="o5"><PastSessions subjects={subjects} current={current} open={open} /></div>
         </div>
         <div className="stack">
         {!empty && <div className="o1"><DueSoonCard tasks={tasks} subjects={subjects} now={now} onOpen={onOpenTask} go={go} /></div>}
-        <div className="card o3">
+        <div className="card o4">
           <h3 className="card-title" style={{ '--head': 'var(--warn)' }}>Where the marks are</h3>
           {pend.length ? (
             <div className="tbl">

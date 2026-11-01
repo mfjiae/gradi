@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import {
   band, calc, needed, result, bandOf, overall, ceil1, fmt, num, groupSessions, guessSession, isCurrent,
   pendingAcross, defaultWhatIf, subBand, yearOptions, calendarYear, keepBest,
+  sessionTrend, sessionShort, countedScore,
 } from '../grades.js';
 import * as E from '../edit.js';
 
@@ -286,5 +287,86 @@ describe('count the best N of M parts', () => {
     expect(E.setCompField(s, 'q', 'best', '2').components[0].best).toBe(2);
     expect(E.setCompField(s, 'q', 'best', '').components[0].best).toBeNull();
     expect(E.setCompField(s, 'q', 'best', '0').components[0].best).toBeNull();
+  });
+});
+
+describe('bonus marks count as full', () => {
+  it('caps a single mark at its max but keeps the entered score', () => {
+    const s = subj({ components: [comp('Labs', 20, [[20.5, 20]]), comp('Exam', 80, [[40, 80]])] });
+    const r = calc(s);
+    expect(r.banked).toBeCloseTo(20 + 40);
+    expect(s.components[0].items[0].score).toBe(20.5);
+    expect(countedScore({ score: 20.5, max: 20 })).toBe(20);
+    expect(countedScore({ score: 15, max: 20 })).toBe(15);
+  });
+  it('caps each part before parts are totaled', () => {
+    // 11/10 + 5/10 counts as 10 + 5 = 15/20 (not 16/20)
+    const s = subj({ components: [comp('Quizzes', 100, [[11, 10], [5, 10]])] });
+    expect(calc(s).avg).toBeCloseTo(75);
+  });
+  it('a component cannot pass 100% and the hurdle uses the capped percent', () => {
+    const s = subj({ components: [comp('Exam', 100, [[55, 50]], { hurdle: 50 })] });
+    const r = calc(s);
+    expect(r.comps[0].pct).toBeCloseTo(100);
+    expect(r.avg).toBeCloseTo(100);
+  });
+  it('best N ranks a bonus part as 100%, ties go to the earlier part', () => {
+    const c = comp('Quizzes', 100, [[10, 10], [12, 10], [7, 10]], { group: true });
+    c.best = 2;
+    const { keep, out } = keepBest(c);
+    expect(keep.has(c.items[0].id)).toBe(true);
+    expect(keep.has(c.items[1].id)).toBe(true);
+    expect(out.get(c.items[2].id)).toBe('dropped');
+  });
+});
+
+describe('session trend', () => {
+  const off = (year, session, grade, mark, o = {}) => subj({ year, session, official: { grade, mark }, ...o });
+  const cur = { year: 2026, session: 'Spring' };
+  it('gives the running GPA and WAM after each session, oldest first', () => {
+    const t = sessionTrend([
+      off(2025, 'Spring', 'HD', 90), off(2025, 'Autumn', 'D', 77), off(2025, 'Autumn', 'HD', 88),
+    ], cur);
+    expect(t.map((p) => p.key)).toEqual(['2025-1', '2025-2']);
+    expect(t[0].gpa).toBeCloseTo(6.5);
+    expect(t[0].avg).toBeCloseTo(82.5);
+    expect(t[1].gpa).toBeCloseTo(20 / 3);
+    expect(t[1].avg).toBeCloseTo(85);
+    expect(t.every((p) => !p.proj)).toBe(true);
+  });
+  it('last real point equals the all-sessions numbers', () => {
+    const subs = [off(2025, 'Autumn', 'HD', 86, { countsWam: false }), off(2025, 'Spring', 'C', null), off(2026, 'Autumn', 'P', 55), off(2026, 'Autumn', 'PASS', null, { cp: 3 })];
+    const t = sessionTrend(subs, cur);
+    const all = overall(subs, { onlyOfficial: true });
+    expect(t.at(-1).gpa).toBeCloseTo(all.gpa);
+    expect(t.at(-1).avg).toBeCloseTo(all.avg);
+  });
+  it('adds a projected point for the current session from marks so far (whole-number marks in WAM)', () => {
+    const subs = [
+      off(2026, 'Autumn', 'HD', 90),
+      subj({ components: [comp('A', 100, [[82.2, 100]])] }), // 82 -> D
+      subj({ components: [comp('A', 100, [[73.3, 100]])] }), // 73 -> C
+      subj({ components: [comp('A', 100, [[null, 100]])] }), // no mark yet: left out
+    ];
+    const t = sessionTrend(subs, cur);
+    expect(t).toHaveLength(2);
+    expect(t[1]).toMatchObject({ key: '2026-2', proj: true });
+    expect(t[1].gpa).toBeCloseTo((7 + 6 + 5) / 3);
+    expect(t[1].avg).toBeCloseTo((90 + 82 + 73) / 3);
+  });
+  it('no projection when every current subject has a result; projection replaces a partly finished current session', () => {
+    expect(sessionTrend([off(2026, 'Spring', 'HD', 90)], cur)).toEqual([expect.objectContaining({ key: '2026-2', proj: false })]);
+    const t = sessionTrend([off(2026, 'Spring', 'HD', 90), subj({ components: [comp('A', 100, [[60, 100]])] })], cur);
+    expect(t).toHaveLength(1);
+    expect(t[0].proj).toBe(true);
+    expect(t[0].gpa).toBeCloseTo(5.5);
+  });
+  it('skips other sessions without official results and handles nothing at all', () => {
+    expect(sessionTrend([subj({ year: 2025, session: 'Autumn', components: [comp('A', 100, [[90, 100]])] })], cur)).toEqual([]);
+    expect(sessionTrend([], cur)).toEqual([]);
+  });
+  it('short labels', () => {
+    expect(sessionShort({ year: 2025, session: 'Autumn' })).toBe('Aut 25');
+    expect(sessionShort({ year: 2026, session: 'Summer' })).toBe('Sum 26');
   });
 });
