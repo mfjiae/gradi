@@ -2,6 +2,7 @@
 import { useRef, useState } from 'react';
 import { SESSIONS, BANDS, yearOptions } from '../lib/grades.js';
 import { buildBackup, parseBackup, planRestore, backupFileName } from '../lib/backup.js';
+import { buildExport, exportFileName } from '../lib/exportData.js';
 import * as store from '../lib/store.js';
 import { db } from '../lib/db.js';
 import { connect, disconnect, syncNow, DEFAULT_REPO } from '../lib/sync.js';
@@ -128,6 +129,18 @@ function SyncCard() {
   );
 }
 
+// Hands a file to the browser as a download.
+function saveFile(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  return a;
+}
+
 function DataCard({ count, taskCount = 0 }) {
   const syncOn = !!useLiveQuery(() => db.meta.get('sync'), [])?.token;
   const lastBackup = useLiveQuery(() => db.meta.get('lastBackup'), [])?.at;
@@ -139,15 +152,17 @@ function DataCard({ count, taskCount = 0 }) {
   const download = async () => {
     const snap = await store.readSnapshot();
     const blob = new Blob([JSON.stringify(buildBackup(snap), null, 1)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = backupFileName();
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    const a = saveFile(blob, backupFileName());
     await db.meta.put({ key: 'lastBackup', at: Date.now() }); // this device only: never synced or backed up
     setMsg({ ok: true, text: `Saved ${a.download} (${snap.subjects.length} subject${snap.subjects.length === 1 ? '' : 's'}).` });
+  };
+  // Export to Excel (M7, option A): everything, one sheet each for Subjects, Assessments, Tasks and Plan.
+  const exportXlsx = async () => {
+    const snap = await store.readSnapshot();
+    const current = await store.getCurrent();
+    const bytes = buildExport({ subjects: snap.subjects, tasks: snap.tasks, current, degreeTotal: snap.degree?.total });
+    saveFile(new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), exportFileName());
+    setMsg({ ok: true, text: `Saved ${exportFileName()}. It's for reading and your own sums; to keep a copy you can restore, use Download backup.` });
   };
   const pick = async (e) => {
     const f = e.target.files?.[0];
@@ -171,7 +186,7 @@ function DataCard({ count, taskCount = 0 }) {
   return (
     <div className="card">
       <h3 className="card-title">Backup</h3>
-      <div className="note">A backup is one file of all your grades and study tasks. Keep one now and then, even with sync on.</div>
+      <div className="note">A backup is one file of all your grades and study tasks. Keep one now and then, even with sync on. Export to Excel saves everything as a spreadsheet to read or do your own sums in; it can't be restored.</div>
       <div className="info-box">
         <div><span>On this device</span><b>{count} subject{count === 1 ? '' : 's'}{taskCount ? ` · ${taskCount} task${taskCount === 1 ? '' : 's'}` : ''}</b></div>
         <div><span>Last backup</span><b>{lastBackup ? ago(lastBackup) : 'never'}</b></div>
@@ -179,6 +194,7 @@ function DataCard({ count, taskCount = 0 }) {
       <div className="add-row">
         <button type="button" className="btn sm" onClick={download}>Download backup</button>
         <button type="button" className="btn sm" onClick={() => file.current?.click()}>Restore from file</button>
+        {count > 0 && <button type="button" className="btn sm" onClick={exportXlsx}>Export to Excel</button>}
         <input ref={file} type="file" accept="application/json,.json" hidden onChange={pick} />
         {count === 0 && !syncOn && <button type="button" className="btn sm" onClick={async () => { const cur = await store.getCurrent(); await store.addSubjects(sampleSubjects(cur)); setMsg({ ok: true, text: 'Added 8 fake sample subjects. Clear everything removes them.' }); }}>Load sample subjects</button>}
         {count > 0 && (

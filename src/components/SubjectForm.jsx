@@ -1,22 +1,27 @@
 // Add subject / Edit details. Same form as the prototype's Add subject; editing also sets the official result.
 import { useEffect, useRef, useState } from 'react';
-import { SESSIONS, OFFICIAL_GRADES, DEFAULT_CP, DEFAULT_TARGET, yearOptions } from '../lib/grades.js';
+import { SESSIONS, OFFICIAL_GRADES, DEFAULT_CP, DEFAULT_TARGET, yearOptions, sessionKey } from '../lib/grades.js';
+import { FUTURE_YEARS } from '../lib/plan.js';
 
 const GRADE_LABEL = { HD: 'HD', D: 'D', C: 'C', P: 'P', F: 'F', PASS: 'Pass, not graded' };
 
-export default function SubjectForm({ subject, current, years = [], onSave, onClose }) {
+// preset (from Subjects → Plan): { year, session } to start in a later session.
+export default function SubjectForm({ subject, current, years = [], preset = null, onSave, onClose }) {
   const editing = !!subject;
   const [f, setF] = useState(() => ({
     code: subject?.code ?? '',
     name: subject?.name ?? '',
-    year: String(subject?.year ?? current.year),
-    session: subject?.session ?? current.session,
+    year: String(subject?.year ?? preset?.year ?? current.year),
+    session: subject?.session ?? preset?.session ?? current.session,
+    enrolled: !!subject?.enrolled,
     cp: String(subject?.cp ?? DEFAULT_CP),
     target: String(subject?.target ?? DEFAULT_TARGET),
     grade: subject?.official?.grade ?? '',
     mark: subject?.official?.mark == null ? '' : String(subject.official.mark),
   }));
-  const yearList = yearOptions([...years, current.year, Number(f.year)]);
+  // Later years too, so subjects can be planned ahead (M7).
+  const yearList = yearOptions([...years, current.year, Number(f.year), ...Array.from({ length: FUTURE_YEARS }, (_, k) => current.year + k + 1)]);
+  const later = sessionKey({ year: Number(f.year), session: f.session }) > sessionKey(current);
   const first = useRef(null);
   useEffect(() => {
     first.current?.focus();
@@ -27,7 +32,7 @@ export default function SubjectForm({ subject, current, years = [], onSave, onCl
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const submit = (e) => {
     e.preventDefault();
-    const out = { code: f.code, name: f.name, year: f.year, session: f.session, cp: f.cp, target: f.target };
+    const out = { code: f.code, name: f.name, year: f.year, session: f.session, cp: f.cp, target: f.target, enrolled: later && f.enrolled };
     if (editing) out.official = { grade: f.grade, mark: f.mark };
     onSave(out);
   };
@@ -45,6 +50,9 @@ export default function SubjectForm({ subject, current, years = [], onSave, onCl
           <label>Credit points<input className="in" inputMode="decimal" value={f.cp} onChange={set('cp')} /></label>
           <label>Target mark<input className="in" inputMode="decimal" value={f.target} onChange={set('target')} /></label>
         </div>
+        {later && (
+          <label className="check-row"><input type="checkbox" checked={f.enrolled} onChange={(e) => setF({ ...f, enrolled: e.target.checked })} /> Already enrolled (shows Enrolled instead of Planned)</label>
+        )}
         {editing && (
           <div className="grid g2">
             <label>Official result

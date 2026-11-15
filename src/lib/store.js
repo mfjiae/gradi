@@ -20,6 +20,12 @@ export async function setCurrent({ year, session }) {
   requestSync();
 }
 
+// Degree planner settings (M7): { total } in meta 'degree', synced like the current session.
+export async function setDegreeTotal(total) {
+  await db.meta.put({ key: 'degree', total, updatedAt: Date.now() });
+  requestSync();
+}
+
 // Tasks linked to a subject follow its marks: a new mark ticks the task Done, a renamed part renames it,
 // a removed part drops the link. Runs inside the caller's transaction.
 async function followMarks(oldS, newS, now) {
@@ -65,10 +71,11 @@ export async function deleteSubject(uid) {
 }
 
 export async function readSnapshot() {
-  const [subjects, tasks, tombs, cur] = await Promise.all([db.subjects.toArray(), db.tasks.toArray(), db.tombstones.toArray(), db.meta.get('current')]);
+  const [subjects, tasks, tombs, cur, deg] = await Promise.all([db.subjects.toArray(), db.tasks.toArray(), db.tombstones.toArray(), db.meta.get('current'), db.meta.get('degree')]);
   const tombstones = Object.fromEntries(tombs.map((t) => [t.key, t.at]));
   const current = cur ? { year: cur.year, session: cur.session, updatedAt: cur.updatedAt } : null;
-  return normalize({ subjects, tasks, tombstones, current });
+  const degree = deg ? { total: deg.total, updatedAt: deg.updatedAt } : null;
+  return normalize({ subjects, tasks, tombstones, current, degree });
 }
 
 // Make the database match a snapshot exactly (used by restore).
@@ -82,6 +89,7 @@ export async function writeSnapshot(snap) {
     await db.tombstones.clear();
     await db.tombstones.bulkPut(Object.entries(s.tombstones).map(([key, at]) => ({ key, at })));
     if (s.current) await db.meta.put({ key: 'current', ...s.current });
+    if (s.degree) await db.meta.put({ key: 'degree', ...s.degree });
   });
   requestSync();
 }

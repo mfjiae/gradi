@@ -57,7 +57,7 @@ export function planRestore(local, file, mode, now = Date.now()) {
     const S = pick(f.subjects);
     const T = pick(f.tasks);
     for (const r of [...S.added, ...T.added]) delete tombstones[r.uid];
-    return mergeSnapshots({ ...l, tombstones }, { subjects: [...S.both, ...S.added], tasks: [...T.both, ...T.added], tombstones: {}, current: f.current });
+    return mergeSnapshots({ ...l, tombstones }, { subjects: [...S.both, ...S.added], tasks: [...T.both, ...T.added], tombstones: {}, current: f.current, degree: f.degree });
   }
   const tombstones = { ...l.tombstones, ...f.tombstones };
   const inFile = new Set([...f.subjects, ...f.tasks].map((r) => r.uid));
@@ -66,5 +66,6 @@ export function planRestore(local, file, mode, now = Date.now()) {
   const tasks = stampNow(f.tasks);
   for (const r of [...subjects, ...tasks]) delete tombstones[r.uid];
   const current = f.current ? { ...f.current, updatedAt: now } : l.current;
-  return normalize({ subjects, tasks, tombstones, current });
+  const degree = f.degree ? { ...f.degree, updatedAt: now } : l.degree;
+  return normalize({ subjects, tasks, tombstones, current, degree });
 }

@@ -6,6 +6,7 @@ import { needShort, needColor } from '../lib/display.js';
 import { Pill, Row } from './ui.jsx';
 import { useLocalPref, useNow } from './hooks.js';
 import { DueSoonCard } from './tasksUi.jsx';
+import { isPast, isFuture } from '../lib/plan.js';
 import TrendCard from './Trend.jsx';
 
 
@@ -24,7 +25,7 @@ function Stat({ label, color, tint, value, reason, children }) {
 
 function PastSessions({ subjects, current, open }) {
   const [on, setOn] = useLocalPref('showPast', false);
-  const past = groupSessions(subjects.filter((s) => !isCurrent(s, current)));
+  const past = groupSessions(subjects.filter((s) => isPast(s, current)));
   return (
     <div className="card">
       <div className="card-head">
@@ -57,8 +58,10 @@ function PastSessions({ subjects, current, open }) {
   );
 }
 
-export default function Home({ subjects, tasks = [], current, open, go, onOpenTask }) {
+export default function Home({ subjects: everything, tasks = [], current, open, go, onOpenTask }) {
   const now = useNow();
+  // Planned subjects in later sessions (M7) stay out of Home: they live in Subjects → Plan.
+  const subjects = everything.filter((s) => !isFuture(s, current));
   const subs = subjects.filter((s) => isCurrent(s, current));
   const cur = overall(subs);
   const done = overall(subjects, { onlyOfficial: true });

@@ -33,6 +33,10 @@ export async function writeLocal(merged) {
       const cur = await db.meta.get('current');
       if (!cur || (cur.updatedAt ?? 0) < (merged.current.updatedAt ?? 0)) await db.meta.put({ ...merged.current, key: 'current' });
     }
+    if (merged.degree) {
+      const deg = await db.meta.get('degree');
+      if (!deg || (deg.updatedAt ?? 0) < (merged.degree.updatedAt ?? 0)) await db.meta.put({ ...merged.degree, key: 'degree' });
+    }
   });
 }
 

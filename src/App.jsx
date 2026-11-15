@@ -32,11 +32,12 @@ function parseHash() {
 
 export default function App() {
   const [route, setRoute] = useState(parseHash);
-  const [modal, setModal] = useState(null); // null | { mode: 'add' } | { mode: 'edit', uid }
+  const [modal, setModal] = useState(null); // null | { mode: 'add', preset? } | { mode: 'edit', uid }
   const [taskModal, setTaskModal] = useState(null); // null | { preset } | { uid }
   const subjects = useLiveQuery(async () => (await db.subjects.toArray()).sort((a, b) => a.code.localeCompare(b.code)), []);
   const tasks = useLiveQuery(() => db.tasks.toArray(), []);
   const curRow = useLiveQuery(() => db.meta.get('current'), []);
+  const degRow = useLiveQuery(() => db.meta.get('degree'), []);
   const current = curRow ? { year: curRow.year, session: curRow.session } : guessSession();
 
   useEffect(() => {
@@ -69,8 +70,9 @@ export default function App() {
       setModal(null);
     } else {
       const s = await store.putSubject(E.newSubject(f));
+      const fromPlan = !!modal?.preset;
       setModal(null);
-      open(s.uid);
+      if (!fromPlan) open(s.uid); // adding from Subjects → Plan stays on the plan
     }
   };
 
@@ -85,7 +87,7 @@ export default function App() {
         onDelete={async () => { await store.deleteSubject(s.uid); go('subjects'); }}
         back={() => go('subjects')} />
     );
-  } else if (route.view === 'subjects') page = <Subjects subjects={subjects} current={current} open={open} />;
+  } else if (route.view === 'subjects') page = <Subjects subjects={subjects} current={current} open={open} degreeTotal={degRow?.total} onAdd={(preset) => setModal({ mode: 'add', preset })} />;
   else if (route.view === 'study') page = <Study tasks={tasks} subjects={subjects} current={current} onOpen={openTask} onNew={newTask} />;
   else if (route.view === 'settings') page = <Settings current={current} count={subjects.length} taskCount={tasks.length} years={subjects.map((x) => x.year)} />;
   else page = <Home subjects={subjects} tasks={tasks} current={current} open={open} go={go} onOpenTask={openTask} />;
@@ -116,7 +118,7 @@ export default function App() {
         {NAV.slice(2).map((n) => navBtn(n, 'tab-i'))}
       </nav>
       {modal && (modal.mode === 'add' || editing) && (
-        <SubjectForm subject={editing} current={current} years={(subjects ?? []).map((x) => x.year)} onSave={saveForm} onClose={closeModal} />
+        <SubjectForm subject={editing} current={current} preset={modal.preset} years={(subjects ?? []).map((x) => x.year)} onSave={saveForm} onClose={closeModal} />
       )}
       {taskModal && subjects && tasks && (taskModal.preset || editingTask) && (
         <TaskForm key={taskModal.uid ?? 'new'} task={editingTask} preset={taskModal.preset} subjects={subjects} current={current} onClose={closeTask} />

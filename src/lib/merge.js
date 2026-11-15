@@ -8,6 +8,7 @@
 //  - tombstones: { uid: deletedAt } for subjects and tasks. A delete mark removes a record unless it was edited
 //    after the delete.
 //  - current: the current session { year, session, updatedAt }; the newest one wins.
+//  - degree (M7): the degree planner's settings { total, updatedAt }; the newest one wins. Older snapshots have none.
 //
 // Older app versions ignore `tasks` but keep every delete mark, so a not-yet-updated device can't delete tasks.
 
@@ -23,6 +24,7 @@ export function normalize(s) {
     tasks: clean(s?.tasks),
     tombstones: { ...(s?.tombstones ?? {}) },
     current: s?.current ?? null,
+    degree: s?.degree ?? null,
   };
 }
 
@@ -55,5 +57,6 @@ export function mergeSnapshots(a, b) {
     tasks: mergeList(A.tasks, B.tasks, tombstones),
     tombstones,
     current: newer(A.current, B.current),
+    degree: newer(A.degree, B.degree),
   });
 }

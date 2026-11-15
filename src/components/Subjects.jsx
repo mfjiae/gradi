@@ -1,5 +1,8 @@
-// Subjects: cards for this session, or every session grouped (newest first).
+// Subjects: cards for this session, every session up to now grouped (newest first), or the Plan (M7 degree planner).
+// Later (planned) sessions show only in Plan.
 import { calc, bandOf, result, overall, fmt, isCurrent, groupSessions, sessionName } from '../lib/grades.js';
+import { isFuture } from '../lib/plan.js';
+import Plan from './Plan.jsx';
 import { Pill, Ladder } from './ui.jsx';
 import { useLocalPref } from './hooks.js';
 import { needShort, needColor } from '../lib/display.js';
@@ -34,21 +37,24 @@ function SubjectCard({ s, open }) {
   );
 }
 
-export default function Subjects({ subjects, current, open }) {
+export default function Subjects({ subjects, current, open, onAdd, degreeTotal }) {
   const [scope, setScope] = useLocalPref('scope', 'cur');
   const all = scope === 'all';
+  const plan = scope === 'plan';
+  const upToNow = subjects.filter((s) => !isFuture(s, current));
   const cur = subjects.filter((s) => isCurrent(s, current));
   return (
     <>
       <div className="head">
         <h1 className="h1">Subjects</h1>
         <div className="chips">
-          <button type="button" className={`chip ${!all ? 'on' : ''}`} aria-pressed={!all} onClick={() => setScope('cur')}>This session</button>
+          <button type="button" className={`chip ${!all && !plan ? 'on' : ''}`} aria-pressed={!all && !plan} onClick={() => setScope('cur')}>This session</button>
           <button type="button" className={`chip ${all ? 'on' : ''}`} aria-pressed={all} onClick={() => setScope('all')}>All sessions</button>
+          <button type="button" className={`chip ${plan ? 'on' : ''}`} aria-pressed={plan} onClick={() => setScope('plan')}>Plan</button>
         </div>
       </div>
-      {all ? (
-        subjects.length ? groupSessions(subjects).map((x) => (
+      {plan ? <Plan subjects={subjects} current={current} open={open} onAdd={onAdd} degreeTotal={degreeTotal} /> : all ? (
+        upToNow.length ? groupSessions(upToNow).map((x) => (
           <section key={x.key} className="stack">
             <div className="head">
               <h3 className="card-title" style={{ '--head': 'var(--p)' }}>{sessionName(x)}</h3>

@@ -12,8 +12,9 @@ const part = (name, max, score = null) => ({ id: pid(), name, score, max, w: nul
 const clone = (s) => structuredClone(s);
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-export function newSubject({ code, name = '', year, session, cp, target } = {}) {
+export function newSubject({ code, name = '', year, session, cp, target, enrolled } = {}) {
   return {
+    ...(enrolled ? { enrolled: true } : {}),
     uid: newUid(),
     code: String(code ?? '').trim() || 'NEW_SUBJECT',
     name: String(name ?? '').trim(),
@@ -37,6 +38,7 @@ export function setDetails(s, f) {
   if (f.session != null && SESSIONS.includes(f.session)) t.session = f.session;
   if (f.cp != null) t.cp = num(f.cp) ?? t.cp;
   if (f.target != null) t.target = clamp(num(f.target) ?? t.target, 0, 100);
+  if (f.enrolled != null) t.enrolled = !!f.enrolled;
   if (f.official !== undefined) {
     const g = f.official?.grade;
     if (!g || !OFFICIAL_GRADES.includes(g)) t.official = null;
@@ -47,6 +49,14 @@ export function setDetails(s, f) {
 
 export const setTarget = (s, v) => ({ ...clone(s), target: clamp(num(v) ?? s.target, 0, 100) });
 export const toggleCount = (s, key) => ({ ...clone(s), [key]: s[key] === false });
+
+// Degree planner (M7): move a subject to another session (the move arrows).
+export function setSession(s, { year, session }) {
+  const t = clone(s);
+  if (Number.isInteger(year)) t.year = year;
+  if (SESSIONS.includes(session)) t.session = session;
+  return t;
+}
 
 const withComp = (s, cid, fn) => {
   const t = clone(s);
