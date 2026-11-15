@@ -50,12 +50,19 @@ export async function putSubject(s) {
 }
 
 // Read, change with a pure edit (edit.js), save. Skips the save when nothing changed.
-export async function updateSubject(uid, fn) {
-  const s = await db.subjects.get(uid);
-  if (!s) return null;
-  const next = fn(s);
-  if (!next || JSON.stringify(next) === JSON.stringify(s)) return s;
-  return putSubject(next);
+// Edits run one after another (a queue), so quick edits (adding topics with Enter, Enter…) each see the previous
+// one's result instead of overwriting it.
+let editQueue = Promise.resolve();
+export function updateSubject(uid, fn) {
+  const run = editQueue.then(async () => {
+    const s = await db.subjects.get(uid);
+    if (!s) return null;
+    const next = fn(s);
+    if (!next || JSON.stringify(next) === JSON.stringify(s)) return s;
+    return putSubject(next);
+  });
+  editQueue = run.catch(() => {});
+  return run;
 }
 
 // Deleting a subject also deletes its tasks (each leaves a delete mark).

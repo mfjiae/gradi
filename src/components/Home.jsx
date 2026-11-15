@@ -3,7 +3,7 @@
 // Phones: Due soon, Subjects, Trend, Where the marks are, Past sessions.
 import { calc, bandOf, result, overall, fmt, isCurrent, groupSessions, sessionName, pendingAcross, num } from '../lib/grades.js';
 import { needShort, needColor } from '../lib/display.js';
-import { Pill, Row } from './ui.jsx';
+import { Pill, Row, Icon } from './ui.jsx';
 import { useLocalPref, useNow } from './hooks.js';
 import { DueSoonCard } from './tasksUi.jsx';
 import { isPast, isFuture } from '../lib/plan.js';
@@ -58,7 +58,7 @@ function PastSessions({ subjects, current, open }) {
   );
 }
 
-export default function Home({ subjects: everything, tasks = [], current, open, go, onOpenTask }) {
+export default function Home({ subjects: everything, tasks = [], current, open, go, onOpenTask, onSearch }) {
   const now = useNow();
   // Planned subjects in later sessions (M7) stay out of Home: they live in Subjects → Plan.
   const subjects = everything.filter((s) => !isFuture(s, current));
@@ -72,13 +72,14 @@ export default function Home({ subjects: everything, tasks = [], current, open, 
     <>
       {empty ? (
         <div className="stack home-empty">
-          <h1 className="h1">{sessionName(current)}</h1>
+          <div className="head"><h1 className="h1">{sessionName(current)}</h1><button type="button" className="iconbtn only-m" aria-label="Search" onClick={onSearch}><Icon name="search" /></button></div>
           <div className="note">No subjects yet</div>
         </div>
       ) : (
         <div className="head">
           <h1 className="h1">{sessionName(current)}</h1>
           <span className="pillbtn">{fmt(done.gained, 0)} credit points gained · {subs.length} subject{subs.length === 1 ? '' : 's'} now</span>
+          <button type="button" className="iconbtn only-m" aria-label="Search" onClick={onSearch}><Icon name="search" /></button>
         </div>
       )}
       <div className="grid g3">

@@ -58,7 +58,7 @@ describe('export sheets', () => {
   const sheets = exportSheets({ subjects: [...subjects, future], tasks, current: CUR, degreeTotal: 198 });
   const get = (name) => sheets.find((s) => s.name === name);
   it('has the four agreed sheets', () => {
-    expect(sheets.map((s) => s.name)).toEqual(['Subjects', 'Assessments', 'Tasks', 'Plan']);
+    expect(sheets.map((s) => s.name)).toEqual(['Subjects', 'Assessments', 'Tasks', 'Plan', 'Hub']);
     for (const s of sheets) for (const r of s.rows) expect(r.length <= s.header.length).toBe(true);
   });
   it('lists subjects oldest session first with plain-number marks', () => {

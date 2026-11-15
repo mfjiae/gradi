@@ -1,5 +1,6 @@
 // gradi app shell: desktop sidebar, phone bottom tab bar, pages by address (#/subjects, #/subject/<id>, #/study,
 // #/settings), so the phone's back button works. The task pop-up lives here so Home and Study can both open it.
+// Quick search (M8) opens here too: Ctrl+K anywhere, the sidebar Search button, or Home's magnifier on phones.
 import { useCallback, useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, requestPersistentStorage } from './lib/db.js';
@@ -15,6 +16,7 @@ import Settings from './components/Settings.jsx';
 import SubjectForm from './components/SubjectForm.jsx';
 import Study from './components/Study.jsx';
 import TaskForm from './components/TaskForm.jsx';
+import Search from './components/Search.jsx';
 
 const NAV = [
   { id: 'home', label: 'Home', icon: 'home' },
@@ -34,6 +36,8 @@ export default function App() {
   const [route, setRoute] = useState(parseHash);
   const [modal, setModal] = useState(null); // null | { mode: 'add', preset? } | { mode: 'edit', uid }
   const [taskModal, setTaskModal] = useState(null); // null | { preset } | { uid }
+  const [searching, setSearching] = useState(false);
+  const [hl, setHl] = useState(null); // { id, uid } = a hub item to highlight on subject uid (from search)
   const subjects = useLiveQuery(async () => (await db.subjects.toArray()).sort((a, b) => a.code.localeCompare(b.code)), []);
   const tasks = useLiveQuery(() => db.tasks.toArray(), []);
   const curRow = useLiveQuery(() => db.meta.get('current'), []);
@@ -49,7 +53,13 @@ export default function App() {
     const onVisible = () => { if (document.visibilityState === 'visible') syncNow(); };
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('online', syncNow);
+    // Ctrl+K (Cmd+K on a Mac) opens quick search from any page.
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k') { e.preventDefault(); setSearching(true); }
+    };
+    window.addEventListener('keydown', onKey);
     return () => {
+      window.removeEventListener('keydown', onKey);
       window.removeEventListener('hashchange', on);
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('online', syncNow);
@@ -63,6 +73,23 @@ export default function App() {
   const openTask = (uid) => setTaskModal({ uid });
   const newTask = (preset = {}) => setTaskModal({ preset });
   const active = route.view === 'subject' ? 'subjects' : route.view;
+  useEffect(() => {
+    if (!hl) return undefined;
+    const t = setTimeout(() => setHl(null), 2500);
+    return () => clearTimeout(t);
+  }, [hl]);
+
+  // A picked search result: subject/exam open the subject, a task opens its pop-up here, a link opens in a new
+  // tab, a contact or topic opens the subject and highlights it.
+  const pick = (x) => {
+    setSearching(false);
+    if (x.kind === 'task') openTask(x.id);
+    else if (x.kind === 'link') window.open(x.url, '_blank', 'noopener,noreferrer');
+    else {
+      if (x.kind !== 'subject') setHl({ id: x.id, uid: x.subjectUid, n: Date.now() });
+      if (route.view !== 'subject' || route.id !== x.subjectUid) open(x.subjectUid);
+    }
+  };
 
   const saveForm = async (f) => {
     if (modal?.mode === 'edit') {
@@ -85,12 +112,13 @@ export default function App() {
         save={(fn) => store.updateSubject(s.uid, fn)}
         onEdit={() => setModal({ mode: 'edit', uid: s.uid })}
         onDelete={async () => { await store.deleteSubject(s.uid); go('subjects'); }}
-        back={() => go('subjects')} />
+        back={() => go('subjects')}
+        tasks={tasks} hl={hl && hl.uid === route.id ? hl : null} />
     );
   } else if (route.view === 'subjects') page = <Subjects subjects={subjects} current={current} open={open} degreeTotal={degRow?.total} onAdd={(preset) => setModal({ mode: 'add', preset })} />;
   else if (route.view === 'study') page = <Study tasks={tasks} subjects={subjects} current={current} onOpen={openTask} onNew={newTask} />;
   else if (route.view === 'settings') page = <Settings current={current} count={subjects.length} taskCount={tasks.length} years={subjects.map((x) => x.year)} />;
-  else page = <Home subjects={subjects} tasks={tasks} current={current} open={open} go={go} onOpenTask={openTask} />;
+  else page = <Home subjects={subjects} tasks={tasks} current={current} open={open} go={go} onOpenTask={openTask} onSearch={() => setSearching(true)} />;
 
   const navBtn = (n, cls) => (
     <button type="button" key={n.id} className={`${cls} ${active === n.id ? 'on' : ''}`} aria-current={active === n.id ? 'page' : undefined} onClick={() => go(n.id)}>
@@ -105,6 +133,7 @@ export default function App() {
     <div className="app">
       <aside className="side">
         <div className="brand">gradi</div>
+        <button type="button" className="btn search-btn" onClick={() => setSearching(true)}><Icon name="search" />Search<span className="kbd">Ctrl K</span></button>
         <button type="button" className="btn primary" onClick={() => setModal({ mode: 'add' })}><Icon name="plus" />Add subject</button>
         <nav>{NAV.filter((n) => !n.foot).map((n) => navBtn(n, 'nav-i'))}</nav>
         <div className="side-foot">{NAV.filter((n) => n.foot).map((n) => navBtn(n, 'nav-i'))}</div>
@@ -119,6 +148,9 @@ export default function App() {
       </nav>
       {modal && (modal.mode === 'add' || editing) && (
         <SubjectForm subject={editing} current={current} preset={modal.preset} years={(subjects ?? []).map((x) => x.year)} onSave={saveForm} onClose={closeModal} />
+      )}
+      {searching && subjects && tasks && (
+        <Search subjects={subjects} tasks={tasks} current={current} onPick={pick} onClose={() => setSearching(false)} />
       )}
       {taskModal && subjects && tasks && (taskModal.preset || editingTask) && (
         <TaskForm key={taskModal.uid ?? 'new'} task={editingTask} preset={taskModal.preset} subjects={subjects} current={current} onClose={closeTask} />

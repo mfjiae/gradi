@@ -156,7 +156,7 @@ function DataCard({ count, taskCount = 0 }) {
     await db.meta.put({ key: 'lastBackup', at: Date.now() }); // this device only: never synced or backed up
     setMsg({ ok: true, text: `Saved ${a.download} (${snap.subjects.length} subject${snap.subjects.length === 1 ? '' : 's'}).` });
   };
-  // Export to Excel (M7, option A): everything, one sheet each for Subjects, Assessments, Tasks and Plan.
+  // Export to Excel (M7, option A): everything, one sheet each for Subjects, Assessments, Tasks, Plan and Hub.
   const exportXlsx = async () => {
     const snap = await store.readSnapshot();
     const current = await store.getCurrent();

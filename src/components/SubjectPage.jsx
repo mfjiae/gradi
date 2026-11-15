@@ -1,12 +1,15 @@
 // Subject page. Current subject: Marks on the left; "What do I need?" and "What if" on the right.
 // Past subject (official result): S2 = marks breakdown on the left, official result card on the right.
-import { useState } from 'react';
+// Hub (M8): link buttons + exam line under the title; Revision topics under Marks; Notes and Key contacts on the right.
+import { useEffect, useState } from 'react';
 import { calc, needed, bandOf, band, result, fmt, isNum, defaultWhatIf, BANDS, FAIL, ceil1, sessionName } from '../lib/grades.js';
 import * as E from '../lib/edit.js';
 import { Icon, Pill, Ladder, Field } from './ui.jsx';
-import { useArm } from './hooks.js';
 import { newParts } from '../lib/tasks.js';
 import DuePrompt from './DuePrompt.jsx';
+import { useArm, useNow } from './hooks.js';
+import { getHub, nextExam } from '../lib/hub.js';
+import { HubLinks, ExamLine, TopicsCard, NotesCard, ContactsCard } from './Hub.jsx';
 
 function SubjectHead({ s, r, onEdit, onDelete, arm }) {
   return (
@@ -207,13 +210,23 @@ function OfficialCard({ s, r, save }) {
   );
 }
 
-export default function SubjectPage({ s, save, onEdit, onDelete, back }) {
+export default function SubjectPage({ s, save, onEdit, onDelete, back, tasks = [], hl = null }) {
   const arm = useArm();
+  const now = useNow();
   const [prompt, setPrompt] = useState(null); // new parts waiting for due dates
+  const [examEdit, setExamEdit] = useState(false);
+  // A result picked in quick search: scroll to it (the highlight itself is a CSS flash).
+  useEffect(() => {
+    if (!hl?.id) return undefined;
+    const t = setTimeout(() => document.getElementById(`hub-${hl.id}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 60);
+    return () => clearTimeout(t);
+  }, [hl]);
   if (!s) {
     return <><div className="empty">Subject not found.</div><div><button type="button" className="btn" onClick={back}>Back to subjects</button></div></>;
   }
   const r = calc(s);
+  const exam = nextExam(s, tasks, now);
+  const info = getHub(s).exam;
   // Adding an assessment or a part: offer to make study tasks for the new parts (not for finished subjects).
   const saveAdd = async (fn) => {
     const before = s;
@@ -225,14 +238,25 @@ export default function SubjectPage({ s, save, onEdit, onDelete, back }) {
   };
   const due = prompt && <DuePrompt subject={s} parts={prompt} onClose={() => setPrompt(null)} />;
   const crumb = <div><button type="button" className="crumb" onClick={back}><Icon name="back" />Subjects</button></div>;
+  const hub = (
+    <>
+      <HubLinks s={s} save={save} hl={hl} showExamAdd={!exam && !info.room && !info.allowed && !examEdit} onExamAdd={() => setExamEdit(true)} />
+      <ExamLine s={s} save={save} exam={exam} editing={examEdit} setEditing={setExamEdit} hl={hl} />
+    </>
+  );
+  const side = <><NotesCard s={s} save={save} /><ContactsCard s={s} save={save} hl={hl} /></>;
   if (s.official) {
     return (
       <>
         {crumb}
         <div className="card"><SubjectHead s={s} r={r} onEdit={onEdit} onDelete={onDelete} arm={arm} /></div>
+        {hub}
         <div className="cols">
-          <div className="card"><h3 className="card-title">Marks breakdown</h3><div className="note">Reference only. Hidden exam marks are left blank.</div><CompEditor s={s} r={r} save={save} saveAdd={saveAdd} arm={arm} /></div>
-          <div className="stack"><OfficialCard s={s} r={r} save={save} /></div>
+          <div className="stack">
+            <div className="card"><h3 className="card-title">Marks breakdown</h3><div className="note">Reference only. Hidden exam marks are left blank.</div><CompEditor s={s} r={r} save={save} saveAdd={saveAdd} arm={arm} /></div>
+            <TopicsCard s={s} save={save} hl={hl} />
+          </div>
+          <div className="stack"><OfficialCard s={s} r={r} save={save} />{side}</div>
         </div>
         {due}
       </>
@@ -242,11 +266,16 @@ export default function SubjectPage({ s, save, onEdit, onDelete, back }) {
     <>
       {crumb}
       <div className="card"><SubjectHead s={s} r={r} onEdit={onEdit} onDelete={onDelete} arm={arm} /><Ladder r={r} legend /></div>
+      {hub}
       <div className="cols">
-        <div className="card"><h3 className="card-title">Marks</h3><CompEditor s={s} r={r} save={save} saveAdd={saveAdd} arm={arm} /></div>
+        <div className="stack">
+          <div className="card"><h3 className="card-title">Marks</h3><CompEditor s={s} r={r} save={save} saveAdd={saveAdd} arm={arm} /></div>
+          <TopicsCard s={s} save={save} hl={hl} />
+        </div>
         <div className="stack">
           <div className="card"><h3 className="card-title" style={{ '--head': 'var(--hd)' }}>What do I need?</h3><TargetBlock s={s} r={r} save={save} /></div>
           <div className="card"><h3 className="card-title" style={{ '--head': 'var(--review)' }}>What if</h3><WhatIf key={s.uid} s={s} r={r} /></div>
+          {side}
         </div>
       </div>
       {due}
