@@ -86,6 +86,20 @@ This file is the source of truth for rules, milestones, the bug list and future 
 - [ ] M4 extras: unequal part weights (parked 1 Nov 2026 until a current subject needs it; IES labs was the only example and has an official result). Bonus marks done in M6.
 - Skipped (Ken, 1 Nov 2026): calendar Day, 3 days and Year views. List, Week and Month are enough.
 
+## Planned next (agreed 15 Nov 2026; NOT designed, NOT built. Each needs prototypes, "UI locked" and "build" as usual)
+Ken picked six features to grow gradi into a fuller study tracker. Order chosen for efficiency (classes are over until Autumn 2027, so the timetable goes last but must ship before that session starts, late Feb 2027):
+- [ ] M7: Degree planner + Excel export.
+  - Planner: future subjects per session with credit points, progress toward the degree total, cp load per session, "GPA at graduation if I average X from here". The degree total and which subjects count toward it must be editable (a per-subject "counts toward degree" switch: credit points gained and credit points that count can differ after a change of major). New grade maths = Opus high, confirm rules with Ken first.
+  - Open: how much of Ken's separate "UTS Study Plan Checker" artifact (requisites, Autumn/Spring-only offerings, overload limits) moves into gradi, or whether gradi stays a simple planner and the checker stays separate.
+  - Excel export: a Settings button that downloads marks and tasks as a spreadsheet. The file holds real grades, so it is made on the device only and never touches this repo.
+- [ ] M8: Subject hub + quick search.
+  - Hub on each subject page: pinned links (Canvas, subject outline, drive folder), key contacts, revision topic checklist. Syncs with the subject.
+  - Quick search (Ctrl+K, and a search button on phones): jump to any subject, task or hub item.
+- [ ] M9: Timetable in the Study calendar + phone calendar export. Target: before Autumn 2027 starts.
+  - Classes come from Ken's UTS MyTimetable calendar link (an .ics feed). Checked 15 Nov 2026: the feed opens without login and lists every class as its own dated event (name + activity, start, end, room; no repeat rules), BUT a page on mfjiae.github.io cannot fetch it (the browser blocks the cross-site request). So the app cannot read the link directly. Options to prototype: (a) Ken downloads the .ics file and imports it in gradi, once per session; (b) a scheduled GitHub Action in gradi-data fetches the link and saves the classes next to gradi.json, so every device gets them through sync; (c) a small relay service (least preferred: a third party would see the link).
+  - The link is a private token for Ken's timetable: never commit it here. It may only live on a device or in the private gradi-data repo.
+  - Phone calendar export: download tasks and exams as a calendar file the phone's calendar app imports (a one-off copy, re-export after changes). Classes are left out because the phone can subscribe to the UTS link itself.
+
 ## Beyond the prototype in M1 (tell Ken; change if he wants)
 - "Edit details" button on the subject page opens the Add subject form prefilled, plus Official result (grade + optional mark). The prototype had no way to edit a subject or record its result.
 - Backup card: Download backup / Restore from file (Merge or Replace) / Load sample subjects (only when empty) / Clear everything, replacing the prototype's JSON text box.
